@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StyledPages - Transform Content to Professional PDFs</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">📄</div>
+                    <div class="logo-text">
+                        <h1>StyledPages</h1>
+                        <span class="tagline">Transform content into professional PDFs</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="loadDemo">
+                        <span class="btn-icon">✨</span>
+                        Load Demo
+                    </button>
+                    <button class="btn btn-primary" id="exportPdf">
+                        <span class="btn-icon">📥</span>
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+            <div class="header-progress">
+                <div class="progress-bar" id="headerProgress"></div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2>Content Input</h2>
+                        <p class="section-subtitle">Start typing and watch your content transform</p>
+                    </div>
+                    <div class="input-mode-toggle">
+                        <label class="toggle-label disabled">
+                            <input type="radio" name="inputMode" value="plain" disabled>
+                            <span class="toggle-option">Plain Text <span class="coming-soon">(COMING SOON)</span></span>
+                        </label>
+                        <label class="toggle-label">
+                            <input type="radio" name="inputMode" value="markdown" checked>
+                            <span class="toggle-option">Markdown</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ai-processing-status" id="aiStatus" style="display: none;">
+                    <div class="ai-loading">
+                        <span class="loading"></span>
+                        <span>AI is analyzing your content...</span>
+                    </div>
+                </div>
+                <div class="input-wrapper">
+                    <textarea 
+                        id="contentInput" 
+                        class="content-input" 
+                        placeholder="Enter your content here... AI will automatically detect headers, subheaders, and formatting:
+
+Your Document Title
+
+Introduction Section
+
+This is a regular paragraph. The AI will automatically detect the structure and apply professional styling.
+
+Key Features
+
+- First important point
+- Second important point
+- Third important point
+
+Conclusion
+
+This is how your content will look when transformed into a beautiful PDF with AI-powered formatting."
+                    ></textarea>
+                    <div class="input-overlay">
+                        <div class="input-stats">
+                            <span class="char-count" id="charCount">0 characters</span>
+                            <span class="word-count" id="wordCount">0 words</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-actions">
+                    <button class="btn btn-small btn-outline" id="clearContent">
+                        <span class="btn-icon">🗑️</span>
+                        Clear
+                    </button>
+                    <div class="input-tips">
+                        <span class="tip">💡 Tip: Use # for headers, - for lists, **bold** for emphasis</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2>Live Preview</h2>
+                        <p class="section-subtitle">See your content come to life</p>
+                    </div>
+                    <div class="preview-actions">
+                        <div class="live-indicator">
+                            <span class="live-dot"></span>
+                            <span>Live</span>
+                        </div>
+                        <button class="btn btn-small btn-outline" id="refreshPreview">
+                            <span class="btn-icon">🔄</span>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="preview-container">
+                    <div id="pdfPreview" class="pdf-preview">
+                        <div class="preview-placeholder">
+                            <div class="placeholder-icon">📝</div>
+                            <p>Enter content above to see the live preview</p>
+                            <small>Your formatted PDF will appear here in real-time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customization Controls -->
+        <div class="customization-section">
+            <div class="customization-container">
+                <h2>Document Customization</h2>
+                
+                <!-- Theme and Font Controls -->
+                <div class="control-group">
+                    <h3>Theme & Fonts</h3>
+                    <div class="control-row">
+                        <div class="theme-selector">
+                            <label for="theme">Theme:</label>
+                            <select id="theme" class="theme-dropdown">
+                                <option value="professional">Professional</option>
+                                <option value="creative">Creative</option>
+                                <option value="minimal">Minimal</option>
+                                <option value="academic">Academic</option>
+                            </select>
+                        </div>
+                        <div class="theme-presets">
+                            <label>Quick Themes:</label>
+                            <div class="preset-buttons">
+                                <button class="preset-btn" data-theme="professional">Professional</button>
+                                <button class="preset-btn" data-theme="creative">Creative</button>
+                                <button class="preset-btn" data-theme="minimal">Minimal</button>
+                                <button class="preset-btn" data-theme="academic">Academic</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="font-controls">
+                        <div class="font-group">
+                            <label for="titleFont">Title Font:</label>
+                            <select id="titleFont" class="font-dropdown">
+                                <option value="Inter">Inter</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Lato">Lato</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Playfair Display">Playfair Display</option>
+                                <option value="Source Sans Pro">Source Sans Pro</option>
+                            </select>
+                        </div>
+                        <div class="font-group">
+                            <label for="headerFont">Header Font:</label>
+                            <select id="headerFont" class="font-dropdown">
+                                <option value="Inter">Inter</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Lato">Lato</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Playfair Display">Playfair Display</option>
+                                <option value="Source Sans Pro">Source Sans Pro</option>
+                            </select>
+                        </div>
+                        <div class="font-group">
+                            <label for="bodyFont">Body Font:</label>
+                            <select id="bodyFont" class="font-dropdown">
+                                <option value="Inter">Inter</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Lato">Lato</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Source Sans Pro">Source Sans Pro</option>
+                                <option value="Georgia">Georgia</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color Controls -->
+                <div class="control-group">
+                    <h3>Colors</h3>
+                    <div class="color-controls">
+                        <div class="color-group">
+                            <label for="titleColor">Title Color:</label>
+                            <input type="color" id="titleColor" class="color-picker" value="#1e293b">
+                        </div>
+                        <div class="color-group">
+                            <label for="headerColor">Header Color:</label>
+                            <input type="color" id="headerColor" class="color-picker" value="#1e293b">
+                        </div>
+                        <div class="color-group">
+                            <label for="bodyColor">Body Color:</label>
+                            <input type="color" id="bodyColor" class="color-picker" value="#1e293b">
+                        </div>
+                        <div class="color-group">
+                            <label for="accentColor">Accent Color:</label>
+                            <input type="color" id="accentColor" class="color-picker" value="#3b82f6">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Font Size Controls -->
+                <div class="control-group">
+                    <h3>Font Sizes</h3>
+                    <div class="formatting-controls">
+                        <div class="format-group">
+                            <label for="titleSize">Title Size:</label>
+                            <input type="range" id="titleSize" class="size-slider" min="16" max="48" value="32">
+                            <span id="titleSizeValue">32px</span>
+                        </div>
+                        <div class="format-group">
+                            <label for="headerSize">Header Size:</label>
+                            <input type="range" id="headerSize" class="size-slider" min="12" max="32" value="24">
+                            <span id="headerSizeValue">24px</span>
+                        </div>
+                        <div class="format-group">
+                            <label for="bodySize">Body Size:</label>
+                            <input type="range" id="bodySize" class="size-slider" min="8" max="20" value="14">
+                            <span id="bodySizeValue">14px</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout Controls -->
+                <div class="control-group">
+                    <h3>Layout & Formatting</h3>
+                    <div class="layout-controls">
+                        <div class="layout-group">
+                            <label for="pageSize">Page Size:</label>
+                            <select id="pageSize" class="layout-dropdown">
+                                <option value="letter" selected>Letter (8.5" × 11")</option>
+                                <option value="a4">A4 (210 × 297mm)</option>
+                                <option value="legal">Legal (8.5" × 14")</option>
+                                <option value="tabloid">Tabloid (11" × 17")</option>
+                            </select>
+                        </div>
+                        <div class="layout-group margin-controls">
+                            <label>Margins:</label>
+                            <div class="margin-inputs">
+                                <div class="margin-input-group">
+                                    <label for="marginTop">Top:</label>
+                                    <input type="number" id="marginTop" min="0" max="3" step="0.1" value="1">
+                                    <span class="unit">in</span>
+                                </div>
+                                <div class="margin-input-group">
+                                    <label for="marginBottom">Bottom:</label>
+                                    <input type="number" id="marginBottom" min="0" max="3" step="0.1" value="1">
+                                    <span class="unit">in</span>
+                                </div>
+                                <div class="margin-input-group">
+                                    <label for="marginLeft">Left:</label>
+                                    <input type="number" id="marginLeft" min="0" max="3" step="0.1" value="1">
+                                    <span class="unit">in</span>
+                                </div>
+                                <div class="margin-input-group">
+                                    <label for="marginRight">Right:</label>
+                                    <input type="number" id="marginRight" min="0" max="3" step="0.1" value="1">
+                                    <span class="unit">in</span>
+                                </div>
+                            </div>
+                            <div class="margin-preset-group">
+                                <label for="marginPreset">Preset:</label>
+                                <select id="marginPreset" class="layout-dropdown">
+                                    <option value="0.5">0.5 inches (all)</option>
+                                    <option value="1" selected>1 inch (all)</option>
+                                    <option value="1.25">1.25 inches (all)</option>
+                                    <option value="1.5">1.5 inches (all)</option>
+                                    <option value="2">2 inches (all)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layout-group">
+                            <label for="lineSpacing">Line Spacing:</label>
+                            <select id="lineSpacing" class="layout-dropdown">
+                                <option value="1.0">Single</option>
+                                <option value="1.15">1.15</option>
+                                <option value="1.5" selected>1.5</option>
+                                <option value="2.0">Double</option>
+                            </select>
+                        </div>
+                        <div class="layout-group">
+                            <label>Text Alignment:</label>
+                            <div class="alignment-controls">
+                                <div class="alignment-options">
+                                    <input type="radio" id="alignLeft" name="textAlignment" value="left" checked>
+                                    <label for="alignLeft" class="alignment-option">
+                                        <span class="alignment-icon">⬅</span>
+                                        <span>Left</span>
+                                    </label>
+                                    
+                                    <input type="radio" id="alignCenter" name="textAlignment" value="center">
+                                    <label for="alignCenter" class="alignment-option">
+                                        <span class="alignment-icon">↔</span>
+                                        <span>Center</span>
+                                    </label>
+                                    
+                                    <input type="radio" id="alignRight" name="textAlignment" value="right">
+                                    <label for="alignRight" class="alignment-option">
+                                        <span class="alignment-icon">➡</span>
+                                        <span>Right</span>
+                                    </label>
+                                    
+                                    <input type="radio" id="alignJustify" name="textAlignment" value="justify">
+                                    <label for="alignJustify" class="alignment-option">
+                                        <span class="alignment-icon">⬌</span>
+                                        <span>Justify</span>
+                                    </label>
+                                </div>
+                                <div class="alignment-presets">
+                                    <label for="alignmentPreset">Preset:</label>
+                                    <select id="alignmentPreset" class="layout-dropdown">
+                                        <option value="left">Left Aligned (Default)</option>
+                                        <option value="center">Centered (Titles)</option>
+                                        <option value="justify">Justified (Documents)</option>
+                                        <option value="mixed">Mixed (Headers Left, Body Justified)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Controls -->
+                <div class="control-group">
+                    <h3>Advanced Options</h3>
+                    <div class="advanced-controls">
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="sectionPageBreak" checked>
+                                <span class="checkmark"></span>
+                                Start H1 headers on new page
+                            </label>
+                        </div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="subsectionPageBreak" checked>
+                                <span class="checkmark"></span>
+                                Start H2 headers on new page
+                            </label>
+                        </div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showPageNumbers" checked>
+                                <span class="checkmark"></span>
+                                Show page numbers (top right)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section">
+            <div class="features-header">
+                <h2>Why Choose StyledPages?</h2>
+                <p class="features-subtitle">Transform your content creation workflow with powerful, intelligent design tools</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Instant Formatting</h3>
+                    <p>Automatically detects headers, lists, and paragraphs. No manual formatting required.</p>
+                    <div class="feature-badge">AI-Powered</div>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Professional Templates</h3>
+                    <p>Multiple themes to choose from. Every PDF looks polished and professional.</p>
+                    <div class="feature-badge">4 Themes</div>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon">📄</div>
+                    <h3>One-Click PDF Download</h3>
+                    <p>Generate and download your formatted PDF in seconds.</p>
+                    <div class="feature-badge">Instant</div>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Zero Design Skills</h3>
+                    <p>Perfect for educators, coaches, and content creators. No design experience needed.</p>
+                    <div class="feature-badge">Beginner-Friendly</div>
+                </div>
+            </div>
+            <div class="features-cta">
+                <p>Ready to create professional documents in minutes?</p>
+                <button class="btn btn-primary btn-large" id="scrollToTop">
+                    <span class="btn-icon">🚀</span>
+                    Get Started Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

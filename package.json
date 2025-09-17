@@ -1,0 +1,22 @@
+{
+  "name": "styledpages-pdf-generator",
+  "version": "1.0.0",
+  "description": "PDF generator for StyledPages with exact visual fidelity",
+  "main": "generate-pdf.js",
+  "scripts": {
+    "generate-pdf": "node generate-pdf.js",
+    "install-deps": "npm install"
+  },
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  },
+  "keywords": [
+    "pdf",
+    "puppeteer",
+    "html",
+    "css",
+    "fonts"
+  ],
+  "author": "StyledPages",
+  "license": "MIT"
+}
