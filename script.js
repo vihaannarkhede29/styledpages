@@ -487,54 +487,75 @@ class StyledPages {
     }
 
     async loadDemoContent() {
-        const demoContent = `# Enterprise Document Automation Platform
+        const demoContent = `# StyledPages Demo Document
 
-## Streamline Your Business Documentation Workflow
+Welcome to **StyledPages** — where your plain text transforms into a polished, professional PDF instantly. This demo document shows off headings, lists, quotes, and formatting so you can see what's possible. Feel free to edit this content and watch the preview update in real time!
 
-In today's competitive business environment, organizations require efficient, professional document generation capabilities that scale with enterprise needs. **StyledPages** delivers enterprise-grade document automation, transforming unstructured content into publication-ready materials with enterprise-level reliability and security.
+---
 
-### Enterprise Features
+## ✨ Features at a Glance
+- **Instant Formatting**: Headings, lists, quotes, and styles are auto-applied.
+- **Professional Look**: Clean layouts and modern typography.
+- **Effortless Export**: Generate a ready-to-share PDF with a single click.
 
-- **Advanced Content Intelligence**: AI-powered structure detection and formatting optimization
-- **Corporate Brand Management**: Centralized control over fonts, colors, and styling standards
-- **Multi-Format Export**: Generate PDFs, Word documents, and web-ready formats
-- **Enterprise Security**: SOC 2 compliant with role-based access controls
+---
 
-## Technical Architecture
+## 📖 Example Use Cases
 
-Our enterprise platform is built on a robust, scalable infrastructure designed for high-volume document processing:
+### 1. Reports
+StyledPages is perfect for writing quick reports. For example:  
 
-1. **Content Analysis Engine**: Proprietary algorithms that understand document hierarchy and context
-2. **Template Management System**: Centralized repository for corporate templates and brand guidelines
-3. **Quality Assurance Framework**: Automated validation ensuring consistent output quality
-4. **Integration Capabilities**: RESTful APIs and webhook support for seamless system integration
+**Monthly Report – September 2025**  
+- Revenue increased by 12%  
+- User base grew to 15,000+  
+- Released 3 new product updates  
 
-### Target Enterprise Use Cases
+---
 
-- **Financial Services**: Regulatory reports, client presentations, and compliance documentation
-- **Legal Firms**: Case briefs, contract templates, and court filing preparation
-- **Consulting Organizations**: Client deliverables, proposal generation, and knowledge management
-- **Healthcare Systems**: Patient reports, policy documentation, and regulatory submissions
+### 2. Notes & Documentation
+Take plain notes and instantly turn them into clean docs. Example:
 
-## Business Impact Analysis
+> "Simplicity is the ultimate sophistication."  
+> – Leonardo da Vinci  
 
-### Operational Efficiency Gains
-Organizations report 75% reduction in document preparation time, enabling teams to focus on high-value activities rather than formatting tasks.
+---
 
-### Cost Optimization
-Eliminate the need for dedicated design resources while maintaining professional output standards across all business units.
+### 3. Guides & Articles
+Here's a short guide written right here in the editor:
 
-### Compliance and Consistency
-Ensure all corporate communications meet brand guidelines and regulatory requirements through automated validation and approval workflows.
+#### How to Stay Productive
+1. Start your day with a clear plan.  
+2. Use time-blocking to avoid distractions.  
+3. Review progress at the end of the day.  
 
-### Scalability and Performance
-Handle enterprise-scale document volumes with 99.9% uptime guarantee and sub-second processing times for standard document types.
+---
 
-## Implementation Roadmap
+## 🛠 Formatting Examples
 
-Contact our enterprise solutions team to discuss your organization's specific requirements and develop a customized implementation plan.
+### Text Styles
+- Bold: **This is bold text**  
+- Italic: *This is italic text*  
+- Code: \`inline code\`  
 
-*Transform your document workflow with enterprise-grade automation. Schedule a consultation today.*`;
+### Lists
+- Bullet list item one  
+- Bullet list item two  
+- Bullet list item three  
+
+1. Numbered list item one  
+2. Numbered list item two  
+3. Numbered list item three  
+
+### Links
+[Visit StyledPages](https://styledpages.example.com)
+
+---
+
+## 🎯 Final Thoughts
+StyledPages makes it easy to go from idea → text → polished PDF in minutes.  
+Try editing this document now — change headings, add your own content, and see how StyledPages transforms it instantly.
+
+Happy writing! 🚀`;
 
         document.getElementById('contentInput').value = demoContent;
         await this.updatePreview();
