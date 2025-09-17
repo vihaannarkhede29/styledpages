@@ -1,3 +1,11 @@
+// Analytics Helper
+function trackEvent(eventName, properties = {}) {
+    if (window.va) {
+        window.va('track', eventName, properties);
+    }
+    console.log('Analytics Event:', eventName, properties);
+}
+
 // Authentication System
 class AuthManager {
     constructor() {
@@ -1110,6 +1118,9 @@ class StyledPages {
             this.currentTheme = e.target.value;
             this.applyThemePreset(this.currentTheme);
             this.updatePreview();
+            
+            // Track theme change
+            trackEvent('theme_changed', { theme: this.currentTheme });
         });
         titleFontSelect.addEventListener('change', async (e) => {
             this.titleFont = e.target.value;
@@ -1835,9 +1846,17 @@ Contact our enterprise solutions team to discuss your organization's specific re
         const exportBtn = document.getElementById('exportPdf');
         const originalText = exportBtn.textContent;
         
+        // Track PDF export attempt
+        trackEvent('pdf_export_attempted', {
+            theme: this.currentTheme,
+            pageSize: this.pageSize,
+            contentLength: document.getElementById('contentInput').value.length
+        });
+        
         // Check usage limits before proceeding
         if (!this.usageTracker.canDownloadPDF()) {
             console.log('PDF download blocked by usage limits');
+            trackEvent('pdf_export_blocked', { reason: 'usage_limit' });
             return;
         }
         
@@ -2075,6 +2094,13 @@ Contact our enterprise solutions team to discuss your organization's specific re
             // Show success state
                     exportBtn.innerHTML = '✓ PDF Downloaded!';
             exportBtn.classList.add('success');
+            
+            // Track successful PDF export
+            trackEvent('pdf_export_success', {
+                theme: this.currentTheme,
+                pageSize: this.pageSize,
+                contentLength: document.getElementById('contentInput').value.length
+            });
             
             setTimeout(() => {
                 exportBtn.textContent = originalText;
@@ -2797,6 +2823,12 @@ This is how your content will look when transformed into a beautiful PDF.`;
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new StyledPages();
+    
+    // Track page load
+    trackEvent('page_loaded', {
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
+    });
 });
 
 // Add some smooth scrolling and animations

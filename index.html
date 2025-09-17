@@ -56,15 +56,6 @@
         
         console.log('🔥 Firebase initialized with config:', firebaseConfig.projectId);
     </script>
-    <script>
-        // Vercel Analytics
-        (function() {
-            var script = document.createElement('script');
-            script.src = 'https://cdn.vercel-insights.com/v1/script.js';
-            script.defer = true;
-            document.head.appendChild(script);
-        })();
-    </script>
 </head>
 <body>
     <div class="app-container">
@@ -554,5 +545,11 @@ This is how your content will look when transformed into a beautiful PDF with AI
     </div>
 
     <script src="script.js"></script>
+    
+    <!-- Vercel Analytics -->
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
 </body>
 </html>
