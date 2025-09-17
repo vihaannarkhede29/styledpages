@@ -7,19 +7,145 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        
+        // Firebase config - will be loaded from firebase-config.js
+        let firebaseConfig = {
+            apiKey: "demo-key",
+            authDomain: "demo-project.firebaseapp.com",
+            projectId: "demo-project",
+            storageBucket: "demo-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "demo-app-id"
+        };
+        
+        // Try to load config from firebase-config.js
+        try {
+            const configModule = await import('./firebase-config.js');
+            firebaseConfig = configModule.firebaseConfig;
+            console.log('✅ Firebase config loaded from firebase-config.js');
+        } catch (error) {
+            console.warn('⚠️ Could not load firebase-config.js, using demo config');
+            console.log('📝 Please create firebase-config.js with your Firebase configuration');
+        }
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+        
+        // Make Firebase available globally
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseSignIn = signInWithEmailAndPassword;
+        window.firebaseSignUp = createUserWithEmailAndPassword;
+        window.firebaseSignOut = signOut;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        window.firebaseSignInWithPopup = signInWithPopup;
+        window.firebaseGoogleProvider = googleProvider;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDoc = doc;
+        
+        console.log('🔥 Firebase initialized with config:', firebaseConfig.projectId);
+    </script>
     <script>
         // Vercel Analytics
         (function() {
             var script = document.createElement('script');
-            script.src = 'https://cdn.vercel-insights.com/v1/script.debug.js';
+            script.src = 'https://cdn.vercel-insights.com/v1/script.js';
             script.defer = true;
-            script.setAttribute('data-api', '/api/analytics');
             document.head.appendChild(script);
         })();
     </script>
 </head>
 <body>
     <div class="app-container">
+        <!-- Usage Status Bar -->
+        <div id="usageStatusBar" class="usage-status-bar" style="display: none;">
+            <div class="usage-info">
+                <span id="usageText">Free Plan: 0/3 PDFs this month</span>
+                <button id="upgradeBtn" class="btn btn-small btn-outline">Upgrade</button>
+            </div>
+            <div class="account-info">
+                <span id="userEmail" style="display: none;"></span>
+                <button id="accountBtn" class="btn btn-small btn-outline">Account</button>
+            </div>
+        </div>
+
+        <!-- Account Creation Modal -->
+        <div id="accountModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Create Free Account</h2>
+                    <button id="closeModal" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="accountForm">
+                        <div class="form-group">
+                            <label for="userEmailInput">Email Address</label>
+                            <input type="email" id="userEmailInput" placeholder="your@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="userPasswordInput">Password</label>
+                            <input type="password" id="userPasswordInput" placeholder="Choose a password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPasswordInput">Confirm Password</label>
+                            <input type="password" id="confirmPasswordInput" placeholder="Confirm your password" required>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="acceptTerms" required>
+                                <span class="checkmark"></span>
+                                I agree to the <a href="#" id="termsLink">Terms of Service</a> and <a href="#" id="privacyLink">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="loginForm" style="display: none;">
+                        <div class="form-group">
+                            <label for="loginEmailInput">Email Address</label>
+                            <input type="email" id="loginEmailInput" placeholder="your@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPasswordInput">Password</label>
+                            <input type="password" id="loginPasswordInput" placeholder="Your password" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <!-- Google Sign-In Button -->
+                    <div class="social-login">
+                        <button id="googleSignIn" class="btn btn-google">
+                            <svg width="18" height="18" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Continue with Google
+                        </button>
+                    </div>
+                    
+                    <div class="divider">
+                        <span>or</span>
+                    </div>
+                    
+                    <button id="submitAccount" class="btn btn-primary">Create Account</button>
+                    <button id="submitLogin" class="btn btn-primary" style="display: none;">Sign In</button>
+                    <button id="switchToLogin" class="btn btn-outline">Already have an account? Sign In</button>
+                    <button id="switchToSignup" class="btn btn-outline" style="display: none;">Need an account? Sign Up</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Header -->
         <header class="header">
             <div class="header-content">
@@ -98,6 +224,7 @@ This is how your content will look when transformed into a beautiful PDF with AI
                         <div class="input-stats">
                             <span class="char-count" id="charCount">0 characters</span>
                             <span class="word-count" id="wordCount">0 words</span>
+                            <span class="word-limit" id="wordLimit" style="display: none;">Over 1000 word limit for free plan</span>
                         </div>
                     </div>
                 </div>

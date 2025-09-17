@@ -1,3 +1,857 @@
+// Authentication System
+class AuthManager {
+    constructor() {
+        this.currentUser = null;
+        this.userData = null; // Additional user data from Firestore
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.initializeFirebaseAuth();
+    }
+
+    async initializeFirebaseAuth() {
+        // Wait for Firebase to be available
+        const checkFirebase = () => {
+            if (window.firebaseAuth && window.firebaseOnAuthStateChanged) {
+                console.log('Firebase Auth available, setting up auth state listener');
+                this.setupAuthStateListener();
+            } else {
+                setTimeout(checkFirebase, 100);
+            }
+        };
+        checkFirebase();
+    }
+
+    setupAuthStateListener() {
+        window.firebaseOnAuthStateChanged(window.firebaseAuth, async (user) => {
+            if (user) {
+                console.log('User signed in:', user);
+                this.currentUser = user;
+                await this.loadUserData(user.uid);
+                this.updateUI();
+                
+                // Refresh usage tracker with new user tier
+                if (window.styledPages && window.styledPages.usageTracker) {
+                    window.styledPages.usageTracker.refreshUserTier();
+                }
+            } else {
+                console.log('User signed out');
+                this.currentUser = null;
+                this.userData = null;
+                this.updateUI();
+                
+                // Refresh usage tracker with anonymous tier
+                if (window.styledPages && window.styledPages.usageTracker) {
+                    window.styledPages.usageTracker.refreshUserTier();
+                }
+            }
+        });
+    }
+
+    async loadUserData(uid) {
+        try {
+            const userDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, 'users', uid));
+            if (userDoc.exists()) {
+                this.userData = userDoc.data();
+                console.log('User data loaded:', this.userData);
+            } else {
+                // Create new user document
+                this.userData = {
+                    tier: 'free',
+                    downloadsThisMonth: 0,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                };
+                await this.saveUserData(uid);
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            // Fallback to default user data
+            this.userData = {
+                tier: 'free',
+                downloadsThisMonth: 0,
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString()
+            };
+        }
+    }
+
+    async saveUserData(uid) {
+        try {
+            await window.firebaseSetDoc(window.firebaseDoc(window.firebaseDb, 'users', uid), this.userData);
+            console.log('User data saved');
+        } catch (error) {
+            console.error('Error saving user data:', error);
+        }
+    }
+
+    bindEvents() {
+        // Account button
+        const accountBtn = document.getElementById('accountBtn');
+        if (accountBtn) {
+            accountBtn.addEventListener('click', () => this.toggleAccountModal());
+        }
+
+        // Modal close button
+        const closeModal = document.getElementById('closeModal');
+        if (closeModal) {
+            closeModal.addEventListener('click', () => this.hideAccountModal());
+        }
+
+        // Form switching
+        const switchToLogin = document.getElementById('switchToLogin');
+        const switchToSignup = document.getElementById('switchToSignup');
+        
+        if (switchToLogin) {
+            switchToLogin.addEventListener('click', () => this.showLoginForm());
+        }
+        if (switchToSignup) {
+            switchToSignup.addEventListener('click', () => this.showSignupForm());
+        }
+
+        // Form submissions
+        const submitAccount = document.getElementById('submitAccount');
+        const submitLogin = document.getElementById('submitLogin');
+        
+        if (submitAccount) {
+            submitAccount.addEventListener('click', () => this.handleSignup());
+        }
+        if (submitLogin) {
+            submitLogin.addEventListener('click', () => this.handleLogin());
+        }
+
+        // Google Sign-In button
+        const googleSignIn = document.getElementById('googleSignIn');
+        if (googleSignIn) {
+            googleSignIn.addEventListener('click', () => this.handleGoogleSignIn());
+        }
+
+        // Close modal on outside click
+        const modal = document.getElementById('accountModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideAccountModal();
+                }
+            });
+        }
+
+        // Initialize Google Sign-In when Google library loads
+        this.initializeGoogleSignIn();
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    isLoggedIn() {
+        return this.currentUser !== null;
+    }
+
+    getUserTier() {
+        return this.userData ? this.userData.tier : 'anonymous_free';
+    }
+
+    toggleAccountModal() {
+        if (this.isLoggedIn()) {
+            this.showAccountMenu();
+        } else {
+            this.showAccountModal();
+        }
+    }
+
+    showAccountModal() {
+        const modal = document.getElementById('accountModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            this.showSignupForm();
+        }
+    }
+
+    hideAccountModal() {
+        const modal = document.getElementById('accountModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            this.clearForms();
+        }
+    }
+
+    showSignupForm() {
+        document.getElementById('accountForm').style.display = 'block';
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('submitAccount').style.display = 'block';
+        document.getElementById('submitLogin').style.display = 'none';
+        document.getElementById('switchToLogin').style.display = 'block';
+        document.getElementById('switchToSignup').style.display = 'none';
+        document.getElementById('modalTitle').textContent = 'Create Free Account';
+    }
+
+    showLoginForm() {
+        document.getElementById('accountForm').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('submitAccount').style.display = 'none';
+        document.getElementById('submitLogin').style.display = 'block';
+        document.getElementById('switchToLogin').style.display = 'none';
+        document.getElementById('switchToSignup').style.display = 'block';
+        document.getElementById('modalTitle').textContent = 'Sign In';
+    }
+
+    clearForms() {
+        // Clear all form inputs
+        const inputs = document.querySelectorAll('#accountModal input');
+        inputs.forEach(input => {
+            input.value = '';
+            input.classList.remove('error');
+        });
+
+        // Clear error messages
+        const errorMessages = document.querySelectorAll('.error-message');
+        errorMessages.forEach(msg => msg.style.display = 'none');
+    }
+
+    async handleSignup() {
+        const email = document.getElementById('userEmailInput').value;
+        const password = document.getElementById('userPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
+        const acceptTerms = document.getElementById('acceptTerms').checked;
+
+        // Validation
+        if (!this.validateSignupForm(email, password, confirmPassword, acceptTerms)) {
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = document.getElementById('submitAccount');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Creating Account...';
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+
+        try {
+            // Create user with Firebase Auth
+            const userCredential = await window.firebaseSignUp(window.firebaseAuth, email, password);
+            const user = userCredential.user;
+            
+            console.log('User created:', user);
+
+            // Create user document in Firestore
+            this.userData = {
+                tier: 'free',
+                downloadsThisMonth: 0,
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                email: user.email,
+                displayName: user.displayName || null
+            };
+
+            await this.saveUserData(user.uid);
+
+            // Update UI
+            this.updateUI();
+            this.hideAccountModal();
+
+            // Show success message
+            alert('Account created successfully! You now have 3 free PDFs this month.');
+
+        } catch (error) {
+            console.error('Signup error:', error);
+            let errorMessage = 'Error creating account. Please try again.';
+            
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'An account with this email already exists. Please sign in instead.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Password is too weak. Please choose a stronger password.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Please enter a valid email address.';
+            }
+            
+            alert(errorMessage);
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+        }
+    }
+
+    async handleLogin() {
+        const email = document.getElementById('loginEmailInput').value;
+        const password = document.getElementById('loginPasswordInput').value;
+
+        // Basic validation
+        if (!email || !password) {
+            alert('Please fill in all fields.');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = document.getElementById('submitLogin');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Signing In...';
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+
+        try {
+            // Sign in with Firebase Auth
+            const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
+            const user = userCredential.user;
+            
+            console.log('User signed in:', user);
+
+            // Update last login time
+            this.userData.lastLogin = new Date().toISOString();
+            await this.saveUserData(user.uid);
+
+            // Update UI
+            this.updateUI();
+            this.hideAccountModal();
+
+            alert('Welcome back!');
+
+        } catch (error) {
+            console.error('Login error:', error);
+            let errorMessage = 'Invalid email or password. Please try again.';
+            
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = 'No account found with this email. Please sign up instead.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = 'Incorrect password. Please try again.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Please enter a valid email address.';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Too many failed attempts. Please try again later.';
+            }
+            
+            alert(errorMessage);
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+        }
+    }
+
+    validateSignupForm(email, password, confirmPassword, acceptTerms) {
+        let isValid = true;
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            this.showFieldError('userEmailInput', 'Please enter a valid email address.');
+            isValid = false;
+        }
+
+        // Password validation
+        if (!password || password.length < 6) {
+            this.showFieldError('userPasswordInput', 'Password must be at least 6 characters.');
+            isValid = false;
+        }
+
+        // Confirm password validation
+        if (password !== confirmPassword) {
+            this.showFieldError('confirmPasswordInput', 'Passwords do not match.');
+            isValid = false;
+        }
+
+        // Terms acceptance
+        if (!acceptTerms) {
+            alert('Please accept the Terms of Service and Privacy Policy.');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const formGroup = field.closest('.form-group');
+        
+        formGroup.classList.add('error');
+        field.classList.add('error');
+        
+        // Remove existing error message
+        const existingError = formGroup.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Add new error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        formGroup.appendChild(errorDiv);
+    }
+
+    showAccountMenu() {
+        // For now, just show logout option
+        const action = confirm(`Logged in as: ${this.currentUser.email}\n\nClick OK to logout, Cancel to stay logged in.`);
+        if (action) {
+            this.logout();
+        }
+    }
+
+    async logout() {
+        try {
+            await window.firebaseSignOut(window.firebaseAuth);
+            console.log('User logged out');
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Still update UI even if logout fails
+            this.currentUser = null;
+            this.userData = null;
+            this.updateUI();
+        }
+    }
+
+    updateUI() {
+        const userEmail = document.getElementById('userEmail');
+        const accountBtn = document.getElementById('accountBtn');
+        
+        if (this.isLoggedIn()) {
+            if (userEmail) {
+                userEmail.textContent = this.currentUser.email;
+                userEmail.style.display = 'block';
+            }
+            if (accountBtn) {
+                accountBtn.textContent = 'Logout';
+            }
+        } else {
+            if (userEmail) {
+                userEmail.style.display = 'none';
+            }
+            if (accountBtn) {
+                accountBtn.textContent = 'Account';
+            }
+        }
+    }
+
+    initializeGoogleSignIn() {
+        // Wait for Google library to load
+        const checkGoogle = () => {
+            if (typeof google !== 'undefined' && google.accounts) {
+                console.log('Google Sign-In library loaded');
+                this.setupGoogleSignIn();
+            } else {
+                setTimeout(checkGoogle, 100);
+            }
+        };
+        checkGoogle();
+    }
+
+    setupGoogleSignIn() {
+        try {
+            // Initialize Google Sign-In
+            google.accounts.id.initialize({
+                client_id: 'YOUR_GOOGLE_CLIENT_ID', // You'll need to replace this
+                callback: (response) => this.handleGoogleCallback(response)
+            });
+            console.log('Google Sign-In initialized');
+        } catch (error) {
+            console.error('Error initializing Google Sign-In:', error);
+        }
+    }
+
+    async handleGoogleSignIn() {
+        try {
+            // Show loading state
+            const googleBtn = document.getElementById('googleSignIn');
+            const originalText = googleBtn.innerHTML;
+            googleBtn.innerHTML = '<span class="loading"></span> Signing in...';
+            googleBtn.disabled = true;
+
+            // Sign in with Google using Firebase
+            const result = await window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider);
+            const user = result.user;
+            
+            console.log('Google Sign-In successful:', user);
+
+            // Create or update user document
+            this.userData = {
+                tier: 'free',
+                downloadsThisMonth: 0,
+                createdAt: this.userData?.createdAt || new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                provider: 'google'
+            };
+
+            await this.saveUserData(user.uid);
+
+            // Update UI
+            this.updateUI();
+            this.hideAccountModal();
+
+            alert(`Welcome ${user.displayName || user.email}! You're now signed in with Google.`);
+
+        } catch (error) {
+            console.error('Google Sign-In error:', error);
+            let errorMessage = 'Google Sign-In failed. Please try again.';
+            
+            if (error.code === 'auth/popup-closed-by-user') {
+                errorMessage = 'Sign-in was cancelled. Please try again.';
+            } else if (error.code === 'auth/popup-blocked') {
+                errorMessage = 'Popup was blocked. Please allow popups and try again.';
+            }
+            
+            alert(errorMessage);
+        } finally {
+            // Reset button
+            const googleBtn = document.getElementById('googleSignIn');
+            googleBtn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+            `;
+            googleBtn.disabled = false;
+        }
+    }
+
+    async handleGoogleCallback(response) {
+        try {
+            console.log('Google Sign-In response:', response);
+
+            // In production, you would decode the JWT token here
+            // For demo, we'll create a mock user
+            const mockUser = {
+                email: 'user@gmail.com',
+                name: 'Google User',
+                picture: 'https://via.placeholder.com/40',
+                sub: 'google_user_123'
+            };
+
+            // Create user account
+            const userAccount = {
+                email: mockUser.email,
+                name: mockUser.name,
+                picture: mockUser.picture,
+                provider: 'google',
+                tier: 'free',
+                createdAt: new Date().toISOString(),
+                downloadsThisMonth: 0
+            };
+
+            // Store user data
+            localStorage.setItem('userAccount', JSON.stringify(userAccount));
+            this.currentUser = userAccount;
+
+            // Update UI
+            this.updateUI();
+            this.hideAccountModal();
+
+            // Refresh usage tracker with new user tier
+            if (window.styledPages && window.styledPages.usageTracker) {
+                window.styledPages.usageTracker.refreshUserTier();
+            }
+
+            // Show success message
+            alert(`Welcome ${mockUser.name}! You're now signed in with Google.`);
+
+            console.log('Google Sign-In successful:', userAccount);
+
+        } catch (error) {
+            console.error('Error processing Google Sign-In:', error);
+            alert('Error processing Google Sign-In. Please try again.');
+        } finally {
+            // Reset button
+            const googleBtn = document.getElementById('googleSignIn');
+            googleBtn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+            `;
+            googleBtn.disabled = false;
+        }
+    }
+}
+
+// Usage Tracking System
+class UsageTracker {
+    constructor() {
+        this.deviceId = this.getOrCreateDeviceId();
+        this.monthlyKey = `usage_${new Date().getMonth()}_${new Date().getFullYear()}`;
+        this.userTier = this.getUserTier();
+        this.init();
+    }
+
+    init() {
+        console.log('UsageTracker initialized:', {
+            deviceId: this.deviceId,
+            monthlyKey: this.monthlyKey,
+            userTier: this.userTier,
+            currentUsage: this.getMonthlyUsage()
+        });
+        this.updateUsageDisplay();
+    }
+
+    getOrCreateDeviceId() {
+        // Try to get existing device ID from multiple sources
+        let deviceId = localStorage.getItem('deviceId') || 
+                      sessionStorage.getItem('deviceId') || 
+                      this.getCookie('deviceId');
+        
+        if (!deviceId) {
+            deviceId = this.generateDeviceFingerprint();
+            // Store in multiple places for persistence
+            localStorage.setItem('deviceId', deviceId);
+            sessionStorage.setItem('deviceId', deviceId);
+            this.setCookie('deviceId', deviceId, 365); // 1 year
+        }
+        return deviceId;
+    }
+
+    generateDeviceFingerprint() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('StyledPages Device ID', 2, 2);
+        
+        const fingerprint = [
+            navigator.userAgent,
+            navigator.language,
+            screen.width + 'x' + screen.height,
+            new Date().getTimezoneOffset(),
+            canvas.toDataURL(),
+            navigator.platform,
+            navigator.cookieEnabled ? '1' : '0'
+        ].join('|');
+        
+        // Create a shorter, more stable ID
+        return btoa(fingerprint).substring(0, 16);
+    }
+
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    setCookie(name, value, days) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+    }
+
+    getUserTier() {
+        // Check if user is logged in via Firebase
+        if (window.styledPages && window.styledPages.authManager) {
+            return window.styledPages.authManager.getUserTier();
+        }
+        return 'anonymous_free';
+    }
+
+    // Method to refresh user tier (called when auth state changes)
+    refreshUserTier() {
+        this.userTier = this.getUserTier();
+        this.updateUsageDisplay();
+        console.log('User tier refreshed:', this.userTier);
+    }
+
+    getMaxDownloads() {
+        const tiers = {
+            'anonymous_free': 3,
+            'free': 3,
+            'pro': -1, // unlimited
+            'enterprise': -1
+        };
+        return tiers[this.userTier] || 3;
+    }
+
+    getMonthlyUsage() {
+        const usage = localStorage.getItem(this.monthlyKey);
+        return usage ? parseInt(usage) : 0;
+    }
+
+    canDownloadPDF() {
+        // Get usage from Firebase user data if available, otherwise fallback to localStorage
+        let monthlyUsage;
+        if (window.styledPages && window.styledPages.authManager && window.styledPages.authManager.userData) {
+            monthlyUsage = window.styledPages.authManager.userData.downloadsThisMonth || 0;
+        } else {
+            monthlyUsage = this.getMonthlyUsage();
+        }
+        
+        const maxDownloads = this.getMaxDownloads();
+        
+        console.log('PDF download check:', {
+            usage: monthlyUsage,
+            max: maxDownloads,
+            canDownload: monthlyUsage < maxDownloads || maxDownloads === -1,
+            userTier: this.userTier,
+            hasAccount: this.hasAccount()
+        });
+        
+        // Check word count limit for free users (max 1000 words)
+        if (this.userTier === 'free' || this.userTier === 'anonymous_free') {
+            const wordCount = this.getCurrentWordCount();
+            
+            if (wordCount > 1000) {
+                this.showWordCountPrompt();
+                return false;
+            }
+        }
+        
+        if (monthlyUsage >= maxDownloads - 1 && !this.hasAccount()) {
+            this.showAccountPrompt();
+            return false;
+        }
+        
+        if (monthlyUsage >= maxDownloads) {
+            this.showUpgradePrompt();
+            return false;
+        }
+        
+        return true;
+    }
+
+    async trackDownload() {
+        if (!this.canDownloadPDF()) {
+            console.log('Download blocked - limit reached');
+            return false;
+        }
+        
+        // Update Firebase user data if available
+        if (window.styledPages && window.styledPages.authManager && window.styledPages.authManager.userData) {
+            const current = window.styledPages.authManager.userData.downloadsThisMonth || 0;
+            const newUsage = current + 1;
+            
+            // Update the user data in memory
+            window.styledPages.authManager.userData.downloadsThisMonth = newUsage;
+            
+            // Save to Firebase
+            try {
+                await window.styledPages.authManager.saveUserData(window.styledPages.authManager.currentUser.uid);
+                console.log('PDF download tracked in Firebase:', {
+                    previous: current,
+                    current: newUsage,
+                    max: this.getMaxDownloads()
+                });
+            } catch (error) {
+                console.error('Error saving download count to Firebase:', error);
+                // Fallback to localStorage
+                const currentLocal = this.getMonthlyUsage();
+                const newUsageLocal = currentLocal + 1;
+                localStorage.setItem(this.monthlyKey, newUsageLocal);
+            }
+        } else {
+            // Fallback to localStorage for anonymous users
+            const current = this.getMonthlyUsage();
+            const newUsage = current + 1;
+            localStorage.setItem(this.monthlyKey, newUsage);
+            
+            console.log('PDF download tracked in localStorage:', {
+                previous: current,
+                current: newUsage,
+                max: this.getMaxDownloads()
+            });
+        }
+        
+        this.updateUsageDisplay();
+        return true;
+    }
+
+    hasAccount() {
+        // Check if user is authenticated with Firebase
+        if (window.styledPages && window.styledPages.authManager && window.styledPages.authManager.currentUser) {
+            return true;
+        }
+        // Fallback to localStorage check
+        return localStorage.getItem('userAccount') !== null;
+    }
+
+    showAccountPrompt() {
+        console.log('Showing account creation prompt');
+        // For now, just log - we'll add UI later
+        alert('You\'ve used 2 of your 3 free PDFs this month. Create a free account to get 1 more PDF, or upgrade to Pro for unlimited downloads.');
+    }
+
+    showUpgradePrompt() {
+        console.log('Showing upgrade prompt');
+        // For now, just log - we'll add UI later
+        alert('You\'ve reached your monthly limit of 3 PDFs. Upgrade to Pro for unlimited downloads starting at $9.99/month.');
+    }
+
+    getCurrentWordCount() {
+        const contentInput = document.getElementById('contentInput');
+        if (!contentInput) return 0;
+        
+        const content = contentInput.value.trim();
+        if (!content) return 0;
+        
+        // Count words (split by whitespace and filter out empty strings)
+        const words = content.split(/\s+/).filter(word => word.length > 0);
+        return words.length;
+    }
+
+    showWordCountPrompt() {
+        const wordCount = this.getCurrentWordCount();
+        const overLimit = wordCount - 1000;
+        
+        console.log('Showing word count prompt');
+        alert(`Free plan allows PDFs up to 1000 words. Your document has ${wordCount} words (${overLimit} over the limit). Upgrade to Pro to create PDFs of any length.`);
+    }
+
+    updateUsageDisplay() {
+        const usage = this.getMonthlyUsage();
+        const max = this.getMaxDownloads();
+        const displayText = max === -1 ? 
+            `Pro Plan: ${usage} PDFs downloaded this month` : 
+            `Free Plan: ${usage}/${max} PDFs this month`;
+        
+        console.log('Usage display updated:', displayText);
+        
+        // Update UI if elements exist
+        const usageText = document.getElementById('usageText');
+        const usageBar = document.getElementById('usageStatusBar');
+        
+        if (usageText) {
+            usageText.textContent = displayText;
+        }
+        
+        // Show/hide usage bar based on usage
+        if (usageBar) {
+            if (usage > 0 || this.userTier !== 'anonymous_free') {
+                usageBar.style.display = 'flex';
+                document.body.classList.add('has-usage-bar');
+            } else {
+                usageBar.style.display = 'none';
+                document.body.classList.remove('has-usage-bar');
+            }
+        }
+    }
+
+    resetMonthlyUsage() {
+        localStorage.removeItem(this.monthlyKey);
+        this.updateUsageDisplay();
+        console.log('Monthly usage reset');
+    }
+
+    // Method to manually set user tier for testing
+    setUserTier(tier) {
+        const account = {
+            tier: tier,
+            createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('userAccount', JSON.stringify(account));
+        this.userTier = tier;
+        this.updateUsageDisplay();
+        console.log('User tier set to:', tier);
+    }
+}
+
 // StyledPages - Content to PDF Converter
 class StyledPages {
     constructor() {
@@ -36,6 +890,11 @@ class StyledPages {
         this.showPageNumbers = true;
         this.inputMode = 'markdown'; // 'plain' or 'markdown'
         this.geminiApiKey = 'AIzaSyDlYQ4Qi9OyazHxWm8WTdWV3bw6or09ry8';
+        
+        // Initialize authentication and usage tracking
+        this.authManager = new AuthManager();
+        this.usageTracker = new UsageTracker();
+        
         this.init();
     }
 
@@ -484,78 +1343,140 @@ class StyledPages {
                 });
             });
         }
+
+        // Testing functionality - add to window for easy access
+        window.styledPagesTesting = {
+            // Test different user tiers
+            setTier: (tier) => this.usageTracker.setUserTier(tier),
+            
+            // Reset usage for testing
+            resetUsage: () => this.usageTracker.resetMonthlyUsage(),
+            
+            // Get current usage info
+            getUsage: () => ({
+                current: this.usageTracker.getMonthlyUsage(),
+                max: this.usageTracker.getMaxDownloads(),
+                tier: this.usageTracker.getUserTier(),
+                deviceId: this.usageTracker.deviceId
+            }),
+            
+            // Simulate downloads for testing
+            simulateDownload: async () => {
+                console.log('Simulating PDF download...');
+                if (await this.usageTracker.trackDownload()) {
+                    console.log('✅ Download tracked successfully');
+                } else {
+                    console.log('❌ Download blocked - limit reached');
+                }
+            },
+
+            // Test word count functionality
+            testWordCount: () => {
+                const wordCount = this.usageTracker.getCurrentWordCount();
+                const isFreeUser = this.usageTracker.userTier === 'free' || this.usageTracker.userTier === 'anonymous_free';
+                
+                console.log('Word count test:', {
+                    currentWords: wordCount,
+                    isFreeUser: isFreeUser,
+                    exceeds1000Words: wordCount > 1000,
+                    canDownload: this.usageTracker.canDownloadPDF()
+                });
+            },
+
+            // Authentication testing
+            auth: {
+                // Get current user
+                getCurrentUser: () => {
+                    console.log('Current user:', this.authManager.getCurrentUser());
+                    console.log('User data:', this.authManager.userData);
+                    return this.authManager.getCurrentUser();
+                },
+                
+                // Test Google Sign-In
+                testGoogleSignIn: () => {
+                    console.log('Testing Google Sign-In...');
+                    this.authManager.handleGoogleSignIn();
+                },
+                
+                // Logout
+                logout: () => {
+                    this.authManager.logout();
+                    console.log('✅ Logged out');
+                },
+                
+                // Check Firebase status
+                checkFirebase: () => {
+                    console.log('Firebase Auth available:', !!window.firebaseAuth);
+                    console.log('Firebase DB available:', !!window.firebaseDb);
+                    console.log('Current user:', this.authManager.getCurrentUser());
+                    console.log('User tier:', this.authManager.getUserTier());
+                }
+            }
+        };
+
+        // Make instances available globally for testing
+        window.styledPages = this;
+
+        // Add upgrade button functionality
+        const upgradeBtn = document.getElementById('upgradeBtn');
+        if (upgradeBtn) {
+            upgradeBtn.addEventListener('click', () => {
+                console.log('Upgrade button clicked');
+                // For now, just show an alert
+                alert('Upgrade functionality coming soon! This will integrate with Gumroad.');
+            });
+        }
     }
 
     async loadDemoContent() {
-        const demoContent = `# StyledPages Demo Document
+        const demoContent = `# Enterprise Document Automation Platform
 
-Welcome to **StyledPages** — where your plain text transforms into a polished, professional PDF instantly. This demo document shows off headings, lists, quotes, and formatting so you can see what's possible. Feel free to edit this content and watch the preview update in real time!
+## Streamline Your Business Documentation Workflow
 
----
+In today's competitive business environment, organizations require efficient, professional document generation capabilities that scale with enterprise needs. **StyledPages** delivers enterprise-grade document automation, transforming unstructured content into publication-ready materials with enterprise-level reliability and security.
 
-## ✨ Features at a Glance
-- **Instant Formatting**: Headings, lists, quotes, and styles are auto-applied.
-- **Professional Look**: Clean layouts and modern typography.
-- **Effortless Export**: Generate a ready-to-share PDF with a single click.
+### Enterprise Features
 
----
+- **Advanced Content Intelligence**: AI-powered structure detection and formatting optimization
+- **Corporate Brand Management**: Centralized control over fonts, colors, and styling standards
+- **Multi-Format Export**: Generate PDFs, Word documents, and web-ready formats
+- **Enterprise Security**: SOC 2 compliant with role-based access controls
 
-## 📖 Example Use Cases
+## Technical Architecture
 
-### 1. Reports
-StyledPages is perfect for writing quick reports. For example:  
+Our enterprise platform is built on a robust, scalable infrastructure designed for high-volume document processing:
 
-**Monthly Report – September 2025**  
-- Revenue increased by 12%  
-- User base grew to 15,000+  
-- Released 3 new product updates  
+1. **Content Analysis Engine**: Proprietary algorithms that understand document hierarchy and context
+2. **Template Management System**: Centralized repository for corporate templates and brand guidelines
+3. **Quality Assurance Framework**: Automated validation ensuring consistent output quality
+4. **Integration Capabilities**: RESTful APIs and webhook support for seamless system integration
 
----
+### Target Enterprise Use Cases
 
-### 2. Notes & Documentation
-Take plain notes and instantly turn them into clean docs. Example:
+- **Financial Services**: Regulatory reports, client presentations, and compliance documentation
+- **Legal Firms**: Case briefs, contract templates, and court filing preparation
+- **Consulting Organizations**: Client deliverables, proposal generation, and knowledge management
+- **Healthcare Systems**: Patient reports, policy documentation, and regulatory submissions
 
-> "Simplicity is the ultimate sophistication."  
-> – Leonardo da Vinci  
+## Business Impact Analysis
 
----
+### Operational Efficiency Gains
+Organizations report 75% reduction in document preparation time, enabling teams to focus on high-value activities rather than formatting tasks.
 
-### 3. Guides & Articles
-Here's a short guide written right here in the editor:
+### Cost Optimization
+Eliminate the need for dedicated design resources while maintaining professional output standards across all business units.
 
-#### How to Stay Productive
-1. Start your day with a clear plan.  
-2. Use time-blocking to avoid distractions.  
-3. Review progress at the end of the day.  
+### Compliance and Consistency
+Ensure all corporate communications meet brand guidelines and regulatory requirements through automated validation and approval workflows.
 
----
+### Scalability and Performance
+Handle enterprise-scale document volumes with 99.9% uptime guarantee and sub-second processing times for standard document types.
 
-## 🛠 Formatting Examples
+## Implementation Roadmap
 
-### Text Styles
-- Bold: **This is bold text**  
-- Italic: *This is italic text*  
-- Code: \`inline code\`  
+Contact our enterprise solutions team to discuss your organization's specific requirements and develop a customized implementation plan.
 
-### Lists
-- Bullet list item one  
-- Bullet list item two  
-- Bullet list item three  
-
-1. Numbered list item one  
-2. Numbered list item two  
-3. Numbered list item three  
-
-### Links
-[Visit StyledPages](https://styledpages.example.com)
-
----
-
-## 🎯 Final Thoughts
-StyledPages makes it easy to go from idea → text → polished PDF in minutes.  
-Try editing this document now — change headings, add your own content, and see how StyledPages transforms it instantly.
-
-Happy writing! 🚀`;
+*Transform your document workflow with enterprise-grade automation. Schedule a consultation today.*`;
 
         document.getElementById('contentInput').value = demoContent;
         await this.updatePreview();
@@ -756,9 +1677,13 @@ Happy writing! 🚀`;
                     inList = false;
                 }
                 
-                // Add page break before H2 headers if user has enabled it
-                // BUT skip page break for the very first H2 (let it flow with H1)
-                if (html.length > 0 && this.subsectionPageBreak && firstH2Found) {
+                // Add page break before H2 headers if:
+                // 1. User has enabled it AND it's not the first H2, OR
+                // 2. Content would overflow to next page (regardless of user preference)
+                const shouldAddPageBreak = (html.length > 0 && this.subsectionPageBreak && firstH2Found) || 
+                                         (lineCount > maxLinesPerPage - 2); // H2 takes 2 lines, so check if adding it would overflow
+                
+                if (shouldAddPageBreak) {
                     html += '<div class="page-break subsection-break"></div>';
                     lineCount = 0;
                 }
@@ -776,6 +1701,13 @@ Happy writing! 🚀`;
                     html += '</ul>';
                     inList = false;
                 }
+                
+                // Add page break before H3 headers if content would overflow to next page
+                if (lineCount > maxLinesPerPage - 2) { // H3 takes 2 lines, so check if adding it would overflow
+                    html += '<div class="page-break subsection-break"></div>';
+                    lineCount = 0;
+                }
+                
                 const headerText = this.processInlineFormatting(line.substring(4));
                 html += `<h3>${headerText}</h3>`;
                 lastWasHeader = true;
@@ -903,6 +1835,12 @@ Happy writing! 🚀`;
         const exportBtn = document.getElementById('exportPdf');
         const originalText = exportBtn.textContent;
         
+        // Check usage limits before proceeding
+        if (!this.usageTracker.canDownloadPDF()) {
+            console.log('PDF download blocked by usage limits');
+            return;
+        }
+        
         // Show loading state
         exportBtn.innerHTML = '<span class="loading"></span> Generating PDF...';
         exportBtn.disabled = true;
@@ -912,6 +1850,14 @@ Happy writing! 🚀`;
             const content = document.getElementById('contentInput').value;
             if (!content.trim()) {
                 throw new Error('No content to export');
+            }
+            
+            // Track the download attempt
+            if (!(await this.usageTracker.trackDownload())) {
+                console.log('Download tracking failed - limit reached');
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+                return;
             }
             
             // Get the preview content
@@ -1352,6 +2298,7 @@ Return only the formatted markdown:`;
         const contentInput = document.getElementById('contentInput');
         const charCountEl = document.getElementById('charCount');
         const wordCountEl = document.getElementById('wordCount');
+        const wordLimitEl = document.getElementById('wordLimit');
         
         if (!contentInput || !charCountEl || !wordCountEl) return;
         
@@ -1361,6 +2308,18 @@ Return only the formatted markdown:`;
         
         charCountEl.textContent = `${charCount.toLocaleString()} characters`;
         wordCountEl.textContent = `${wordCount.toLocaleString()} words`;
+        
+        // Show word limit indicator for free users (max 1000 words)
+        if (wordLimitEl) {
+            const isFreeUser = this.usageTracker.userTier === 'free' || this.usageTracker.userTier === 'anonymous_free';
+            
+            if (isFreeUser && wordCount > 1000) {
+                wordLimitEl.style.display = 'inline-block';
+                wordLimitEl.textContent = `${wordCount - 1000} words over free limit (1000 max)`;
+            } else {
+                wordLimitEl.style.display = 'none';
+            }
+        }
         
         // Update progress bar based on content length
         this.updateProgressBar(charCount);
@@ -1537,8 +2496,13 @@ This is how your content will look when transformed into a beautiful PDF.`;
                     inNumberedList = false;
                 }
                 
-                // Add page break before section if enabled and we have content
-                if (this.sectionPageBreak && lineCount > 0) {
+                // Add page break before section if:
+                // 1. User has enabled it AND we have content, OR
+                // 2. Content would overflow to next page (regardless of user preference)
+                const shouldAddPageBreak = (this.sectionPageBreak && lineCount > 0) || 
+                                         (lineCount > maxLinesPerPage - 2); // H2 takes 2 lines, so check if adding it would overflow
+                
+                if (shouldAddPageBreak) {
                     html += '<div class="page-break section-break"></div>';
                     lineCount = 0;
                 }
@@ -1554,8 +2518,13 @@ This is how your content will look when transformed into a beautiful PDF.`;
                     inNumberedList = false;
                 }
                 
-                // Add page break before subsection if enabled and we have content
-                if (this.subsectionPageBreak && lineCount > 0) {
+                // Add page break before subsection if:
+                // 1. User has enabled it AND we have content, OR
+                // 2. Content would overflow to next page (regardless of user preference)
+                const shouldAddPageBreak = (this.subsectionPageBreak && lineCount > 0) || 
+                                         (lineCount > maxLinesPerPage - 2); // H3 takes 2 lines, so check if adding it would overflow
+                
+                if (shouldAddPageBreak) {
                     html += '<div class="page-break subsection-break"></div>';
                     lineCount = 0;
                 }
