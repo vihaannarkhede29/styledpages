@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+
+# Main pages
+Allow: /index.html
+Allow: /index-optimized.html
+Allow: /styles.css
+Allow: /script.js
+Allow: /server.js
+
+# Test pages (allow but lower priority)
+Allow: /simple-test.html
+Allow: /minimal-test.html
+Allow: /comprehensive-test.html
+Allow: /formatting-test.html
+Allow: /test-pdf.html
+Allow: /test-preview.html
+Allow: /debug*.html
+Allow: /test-*.html
+
+# Block sensitive files
+Disallow: /firebase-config.js
+Disallow: /generate-pdf.js
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /node_modules/
+Disallow: /*.pdf$
+Disallow: /example-usage.js
+
+# Sitemap location
+Sitemap: https://styledpages.com/sitemap.xml
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1
