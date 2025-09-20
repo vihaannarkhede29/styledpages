@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Image Last on Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-content {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .page-break {
+            page-break-before: always;
+            border: 2px dashed #007bff;
+            padding: 10px;
+            margin: 20px 0;
+            background: #e7f3ff;
+            text-align: center;
+            font-weight: bold;
+        }
+        .auto-placed-image {
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            background: #d4edda;
+        }
+        .auto-placed-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Image Last on Page</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>This test demonstrates that images are always placed as the last thing on each page:</p>
+        <ol>
+            <li>Images should appear after all content on each page</li>
+            <li>Images should not appear in the middle of content</li>
+            <li>Images should be the last element before any page break</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Controls</h2>
+        <button onclick="testImagePlacement()">Test Image Placement</button>
+        <button onclick="clearImages()">Clear Images</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Content</h2>
+        <div class="test-content">
+            <h3>Multi-Page Content for Testing</h3>
+            <p>This content is designed to span multiple pages to test image placement behavior.</p>
+        </div>
+    </div>
+
+    <div id="preview" class="test-content">
+        <h2>Preview will appear here</h2>
+        <p>Click "Test Image Placement" to see the formatted content with images.</p>
+    </div>
+
+    <script>
+        // Test content with multiple pages
+        const testContent = `# Main Title
+
+This is the introduction to our comprehensive business strategy document. This content should span multiple pages to properly test the image placement behavior.
+
+## Executive Summary
+
+Our company has been experiencing significant growth over the past year. This document outlines our strategic direction and key initiatives for the upcoming fiscal year.
+
+The executive team has identified several key areas for improvement and expansion. These include market penetration, product development, and operational efficiency.
+
+## Market Analysis
+
+The current market conditions present both opportunities and challenges. We need to carefully analyze our competitive position and identify areas for growth.
+
+Our primary competitors have been investing heavily in technology and customer experience. We must respond to these market dynamics to maintain our competitive advantage.
+
+## Strategic Initiatives
+
+Based on our market analysis, we have identified three key strategic initiatives that will drive our growth over the next 12 months.
+
+### Initiative 1: Digital Transformation
+
+The first initiative focuses on digital transformation across all business units. This includes upgrading our technology infrastructure and implementing new digital tools.
+
+### Initiative 2: Customer Experience Enhancement
+
+The second initiative aims to improve customer satisfaction through better service delivery and enhanced product features.
+
+### Initiative 3: Operational Efficiency
+
+The third initiative focuses on streamlining our operations to reduce costs and improve productivity.
+
+## Financial Projections
+
+Based on our strategic initiatives, we project significant revenue growth over the next three years. Our financial model shows a 25% increase in revenue by the end of year two.
+
+## Conclusion
+
+These strategic initiatives will position our company for long-term success in an increasingly competitive market. We are confident that our approach will deliver the results we need.
+
+## Next Steps
+
+The next phase involves detailed planning and implementation of each strategic initiative. We will begin with the digital transformation project in Q1.
+
+## Appendix
+
+Additional supporting materials and detailed analysis are included in the appendix sections of this document.
+
+This concludes our comprehensive business strategy document.`;
+
+        class TestImageManager {
+            constructor() {
+                this.pexelsApiKey = '01dD2keJqF7zBQJBZosCJUXvjtMtc56YLcqi0OSnYipTQW9IbitELxAN';
+                this.autoImageEnabled = true;
+                this.currentImages = new Set();
+                this.maxImagesPerPage = 3;
+                this.minEmptySpace = 50;
+            }
+
+            async searchImages(query, perPage = 5) {
+                try {
+                    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}`, {
+                        headers: {
+                            'Authorization': this.pexelsApiKey
+                        }
+                    });
+                    const data = await response.json();
+                    return data.photos || [];
+                } catch (error) {
+                    console.error('Error searching images:', error);
+                    return [];
+                }
+            }
+
+            detectEmptySpace(previewElement) {
+                const emptySpaces = [];
+                
+                // Get all content blocks including page breaks
+                const allBlocks = previewElement.querySelectorAll('h1, h2, h3, p, ul, ol, .page-break');
+                console.log('🖼️ Found content blocks:', allBlocks.length);
+                
+                // Group content by pages (using page breaks as dividers)
+                const pages = [];
+                let currentPage = [];
+                
+                for (let i = 0; i < allBlocks.length; i++) {
+                    const block = allBlocks[i];
+                    
+                    if (block.classList.contains('page-break')) {
+                        if (currentPage.length > 0) {
+                            pages.push(currentPage);
+                            currentPage = [];
+                        }
+                    } else {
+                        currentPage.push(block);
+                    }
+                }
+                
+                // Add the last page if it has content
+                if (currentPage.length > 0) {
+                    pages.push(currentPage);
+                }
+                
+                console.log('🖼️ Found pages:', pages.length);
+                
+                // Check each page for empty space at the bottom
+                for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+                    const pageBlocks = pages[pageIndex];
+                    
+                    if (pageBlocks.length === 0) continue;
+                    
+                    // Find the last element on this page (regardless of type)
+                    let lastElementOnPage = pageBlocks[pageBlocks.length - 1];
+                    
+                    // If the last element is a header, we still want to place the image after it
+                    // as it should be the last thing on the page
+                    if (!lastElementOnPage) {
+                        continue; // Skip empty pages
+                    }
+                    
+                    // Calculate space after the last element using a different approach
+                    const lastElementRect = lastElementOnPage.getBoundingClientRect();
+                    const previewRect = previewElement.getBoundingClientRect();
+                    
+                    // Calculate the position of the last element relative to the preview
+                    const lastElementBottom = lastElementRect.bottom - previewRect.top;
+                    
+                    // For multi-page content, we need to calculate space differently
+                    // Check if there's a next page break or if this is the last page
+                    let nextPageBreak = null;
+                    for (let i = 0; i < allBlocks.length; i++) {
+                        if (allBlocks[i].classList.contains('page-break')) {
+                            const pageBreakRect = allBlocks[i].getBoundingClientRect();
+                            const pageBreakTop = pageBreakRect.top - previewRect.top;
+                            
+                            if (pageBreakTop > lastElementBottom) {
+                                nextPageBreak = allBlocks[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    let availableSpace = 0;
+                    if (nextPageBreak) {
+                        // There's a next page, calculate space until the next page break
+                        const nextPageBreakRect = nextPageBreak.getBoundingClientRect();
+                        const nextPageBreakTop = nextPageBreakRect.top - previewRect.top;
+                        availableSpace = nextPageBreakTop - lastElementBottom;
+                    } else {
+                        // This is the last page, calculate space to the bottom of the content
+                        const contentHeight = previewElement.scrollHeight;
+                        availableSpace = contentHeight - lastElementBottom;
+                    }
+                    
+                    console.log(`🖼️ Page ${pageIndex + 1} - available space:`, availableSpace, 'minEmptySpace:', this.minEmptySpace);
+                    
+                    // Only add image if there's enough space
+                    const hasEnoughSpace = availableSpace > this.minEmptySpace;
+                    
+                    if (hasEnoughSpace) {
+                        console.log(`🖼️ Found bottom empty space on page ${pageIndex + 1}:`, availableSpace);
+                        emptySpaces.push({
+                            type: 'bottom',
+                            height: availableSpace,
+                            position: 'bottom',
+                            pageIndex: pageIndex,
+                            afterElement: lastElementOnPage
+                        });
+                    }
+                }
+                
+                console.log('🖼️ Total empty spaces found:', emptySpaces.length);
+                return emptySpaces;
+            }
+
+            async placeImage(emptySpace, content, previewElement) {
+                console.log('🖼️ placeImage called - currentImages:', this.currentImages.size, 'maxImagesPerPage:', this.maxImagesPerPage);
+                
+                if (this.currentImages.size >= this.maxImagesPerPage) {
+                    console.log('🖼️ Max images reached, skipping');
+                    return;
+                }
+
+                const keywords = this.extractKeywords(content);
+                const searchQuery = keywords.join(' ') || 'professional business';
+                console.log('🖼️ Searching for images with query:', searchQuery);
+                
+                try {
+                    const images = await this.searchImages(searchQuery, 3);
+                    console.log('🖼️ Found images:', images.length);
+                    
+                    if (images.length === 0) {
+                        console.log('🖼️ No images found, returning');
+                        return;
+                    }
+
+                    const selectedImage = images[Math.floor(Math.random() * images.length)];
+                    const imageId = `auto-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    console.log('🖼️ Selected image:', selectedImage.id, selectedImage.url);
+                    
+                    const imageElement = document.createElement('div');
+                    imageElement.className = 'auto-placed-image';
+                    imageElement.id = imageId;
+                    imageElement.innerHTML = `
+                        <img src="${selectedImage.url}" 
+                             alt="${selectedImage.alt}" 
+                             style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    `;
+
+                    // Position the image - always as the last thing on the page
+                    if (emptySpace.type === 'bottom' && emptySpace.afterElement) {
+                        console.log('🖼️ Placing image as last element on page after:', emptySpace.afterElement);
+                        
+                        // Find the last element on this page (before any page break)
+                        let lastElementOnPage = emptySpace.afterElement;
+                        let nextElement = lastElementOnPage.nextElementSibling;
+                        
+                        // Keep moving to the next element until we hit a page break or end of content
+                        while (nextElement && !nextElement.classList.contains('page-break')) {
+                            lastElementOnPage = nextElement;
+                            nextElement = nextElement.nextElementSibling;
+                        }
+                        
+                        // Place the image after the last element on the page
+                        lastElementOnPage.insertAdjacentElement('afterend', imageElement);
+                    } else {
+                        // Fallback: place at the very end
+                        console.log('🖼️ Placing image at very end of document');
+                        previewElement.appendChild(imageElement);
+                    }
+
+                    this.currentImages.add(imageId);
+                    console.log('🖼️ Image placed successfully, current count:', this.currentImages.size);
+
+                } catch (error) {
+                    console.error('🖼️ Error placing image:', error);
+                }
+            }
+
+            extractKeywords(content) {
+                const words = content.toLowerCase()
+                    .replace(/[^\w\s]/g, '')
+                    .split(/\s+/)
+                    .filter(word => word.length > 3);
+                
+                const wordCount = {};
+                words.forEach(word => {
+                    wordCount[word] = (wordCount[word] || 0) + 1;
+                });
+                
+                return Object.keys(wordCount)
+                    .sort((a, b) => wordCount[b] - wordCount[a])
+                    .slice(0, 5);
+            }
+
+            async processPreviewForImages(content, previewElement, options = {}) {
+                const { demandOnly = false, ensureAtLeastOne = false, auto = false } = options;
+                console.log('🖼️ Processing images - autoImageEnabled:', this.autoImageEnabled, 'options:', options);
+                if (!this.autoImageEnabled && !demandOnly && !ensureAtLeastOne && !auto) return false;
+
+                // Clear existing auto-placed images
+                this.clearAutoImages(previewElement);
+
+                // Wait for content to render
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                let emptySpaces = this.detectEmptySpace(previewElement);
+                console.log('🖼️ Found empty spaces:', emptySpaces.length);
+
+                // If no space but we must ensure at least one (demo), create a bottom slot
+                if (emptySpaces.length === 0 && ensureAtLeastOne) {
+                    emptySpaces = [{ type: 'bottom', height: 0, position: 'bottom' }];
+                }
+
+                let placedCount = 0;
+                for (const emptySpace of emptySpaces) {
+                    if (this.currentImages.size >= this.maxImagesPerPage) {
+                        console.log('🖼️ Max images reached:', this.maxImagesPerPage);
+                        break;
+                    }
+                    console.log('🖼️ Placing image in empty space:', emptySpace);
+                    await this.placeImage(emptySpace, content, previewElement);
+                    placedCount += 1;
+                }
+
+                return placedCount > 0;
+            }
+
+            clearAutoImages(previewElement) {
+                const autoImages = previewElement.querySelectorAll('.auto-placed-image');
+                autoImages.forEach(img => img.remove());
+                this.currentImages.clear();
+            }
+        }
+
+        const imageManager = new TestImageManager();
+
+        function formatContent(content) {
+            const lines = content.split('\n');
+            let html = '';
+            let inList = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('# ')) {
+                    // Main header
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = line.substring(2);
+                    html += `<h1>${headerText}</h1>`;
+                } else if (line.startsWith('## ')) {
+                    // Subheader
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = line.substring(3);
+                    html += `<h2>${headerText}</h2>`;
+                } else if (line.startsWith('### ')) {
+                    // Small header
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = line.substring(4);
+                    html += `<h3>${headerText}</h3>`;
+                } else if (line.startsWith('- ')) {
+                    // List item
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const listText = line.substring(2);
+                    html += `<li>${listText}</li>`;
+                } else if (line.length > 0) {
+                    // Regular paragraph
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    html += `<p>${line}</p>`;
+                } else {
+                    // Empty line
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    // Add spacing for empty lines
+                    if (html && !html.endsWith('</p>') && !html.endsWith('</h1>') && !html.endsWith('</h2>') && !html.endsWith('</h3>')) {
+                        html += '<br>';
+                    }
+                }
+            }
+            
+            return html;
+        }
+
+        async function testImagePlacement() {
+            const preview = document.getElementById('preview');
+            
+            // Format the content
+            const formattedContent = formatContent(testContent);
+            preview.innerHTML = formattedContent;
+            
+            // Add page breaks to simulate multi-page content
+            const paragraphs = preview.querySelectorAll('p');
+            for (let i = 0; i < paragraphs.length; i += 3) {
+                if (i > 0 && i < paragraphs.length - 1) {
+                    const pageBreak = document.createElement('div');
+                    pageBreak.className = 'page-break';
+                    pageBreak.textContent = `PAGE BREAK ${Math.floor(i/3)}`;
+                    paragraphs[i].insertAdjacentElement('beforebegin', pageBreak);
+                }
+            }
+            
+            // Process images
+            await imageManager.processPreviewForImages(testContent, preview, { ensureAtLeastOne: true });
+            
+            console.log('Image placement test completed');
+        }
+
+        function clearImages() {
+            const preview = document.getElementById('preview');
+            imageManager.clearAutoImages(preview);
+        }
+    </script>
+</body>
+</html>
+
+

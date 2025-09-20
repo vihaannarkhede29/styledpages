@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fixed Multi-Page Image Placement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-content {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+            min-height: 600px;
+        }
+        .pdf-preview {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            line-height: var(--line-spacing, 1.5);
+            color: var(--body-color, #1e293b);
+            font-size: var(--body-size, 14px);
+            padding: var(--margin-top, 1in) var(--margin-right, 1in) var(--margin-bottom, 1in) var(--margin-left, 1in) !important;
+            position: relative;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            min-height: var(--page-height, 11in);
+            width: var(--page-width, 8.5in);
+            page-break-after: always;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        .pdf-preview h1 {
+            font-family: var(--title-font, 'Inter', sans-serif);
+            color: var(--title-color, #1e40af);
+            font-size: var(--title-size, 32px);
+            font-weight: 700;
+            margin: 0 0 1.5rem 0;
+            padding: 0 0 0.5rem 0;
+            border-bottom: 3px solid var(--accent-color, #3b82f6);
+            line-height: 1.2;
+            text-align: var(--title-alignment, var(--text-alignment, left));
+        }
+        .pdf-preview h2 {
+            font-family: var(--header-font, 'Inter', sans-serif);
+            color: var(--header-color, #3b82f6);
+            font-size: var(--header-size, 24px);
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            padding: 0;
+            line-height: 1.3;
+            text-align: var(--header-alignment, var(--text-alignment, left));
+        }
+        .pdf-preview p {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            color: var(--body-color, #475569);
+            font-size: var(--body-size, 14px);
+            line-height: var(--line-spacing, 1.5);
+            margin: 0 0 1rem 0;
+            padding: 0;
+            text-align: var(--body-alignment, var(--text-alignment, left));
+        }
+        .page-break {
+            border-top: 2px dashed #666;
+            margin: 1rem 0;
+            width: 100%;
+            height: 0;
+            position: relative;
+        }
+        .page-break.initial-page {
+            border: none;
+            margin: 0;
+            page-break-before: always;
+        }
+        .auto-placed-image {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .auto-placed-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Fixed Multi-Page Image Placement</h1>
+        
+        <div class="test-content">
+            <div id="pdfPreview" class="pdf-preview">
+                <div class="page-break initial-page"></div>
+                <h1>Business Strategy Document</h1>
+                <p>This is a comprehensive business strategy document that spans multiple pages. The system should now properly detect empty space on each page and add relevant images at the bottom, avoiding headers.</p>
+                
+                <h2>Executive Summary</h2>
+                <p>Our company has identified significant opportunities in the technology sector. This document outlines our strategic approach to capitalize on these opportunities and drive sustainable growth.</p>
+                
+                <p>The market analysis reveals strong demand for innovative solutions, and we are well-positioned to meet this demand with our cutting-edge technology and experienced team.</p>
+                
+                <div class="page-break"></div>
+                
+                <h2>Market Analysis</h2>
+                <p>Our comprehensive market research shows that the technology sector is experiencing unprecedented growth. The data indicates strong potential across multiple verticals including healthcare, finance, and education.</p>
+                
+                <p>Key market drivers include increased digital transformation initiatives, rising demand for cloud-based solutions, and the growing importance of data analytics in business decision-making.</p>
+                
+                <h2>Financial Projections</h2>
+                <p>Based on our analysis, we project substantial revenue growth over the next three years. The financial model shows promising returns on investment and strong cash flow generation.</p>
+                
+                <div class="page-break"></div>
+                
+                <h2>Implementation Plan</h2>
+                <p>We will implement this strategy in three distinct phases, each building upon the previous one to ensure sustainable success and minimize risk.</p>
+                
+                <p>Phase 1 focuses on establishing our core infrastructure and building key partnerships. Phase 2 involves scaling our operations and expanding our market reach. Phase 3 concentrates on innovation and market leadership.</p>
+                
+                <h2>Risk Assessment</h2>
+                <p>While the opportunities are significant, we must also consider potential risks including market volatility, competitive pressures, and regulatory changes.</p>
+                
+                <p>Our risk mitigation strategies include diversifying our revenue streams, maintaining strong financial reserves, and staying ahead of regulatory requirements.</p>
+                
+                <div class="page-break"></div>
+                
+                <h2>Conclusion</h2>
+                <p>In conclusion, this comprehensive strategy provides a solid foundation for future growth and success in our target market segment.</p>
+                
+                <p>The implementation of these initiatives will position us as a leader in the industry while delivering value to our stakeholders and customers.</p>
+            </div>
+        </div>
+        
+        <button class="test-button" onclick="testImagePlacement()">Test Fixed Image Placement</button>
+        <button class="test-button" onclick="clearImages()">Clear Images</button>
+        <button class="test-button" onclick="addMoreContent()">Add More Content</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Simulate the fixed ImageManager functionality
+        class TestImageManager {
+            constructor() {
+                this.pexelsApiKey = '01dD2keJqF7zBQJBZosCJUXvjtMtc56YLcqi0OSnYipTQW9IbitELxAN';
+                this.baseUrl = 'https://api.pexels.com/v1';
+                this.imageCache = new Map();
+                this.autoImageEnabled = true;
+                this.minEmptySpace = 50; // Reduced from 100
+                this.maxImagesPerPage = 5;
+                this.currentImages = new Set();
+            }
+
+            async searchImages(query, perPage = 5) {
+                try {
+                    const cacheKey = `search_${query}_${perPage}`;
+                    if (this.imageCache.has(cacheKey)) {
+                        return this.imageCache.get(cacheKey);
+                    }
+
+                    const response = await fetch(`${this.baseUrl}/search?query=${encodeURIComponent(query)}&per_page=${perPage}`, {
+                        headers: {
+                            'Authorization': this.pexelsApiKey
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Pexels API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const images = data.photos.map(photo => ({
+                        id: photo.id,
+                        url: photo.src.medium,
+                        alt: photo.alt,
+                        photographer: photo.photographer,
+                        photographerUrl: photo.photographer_url,
+                        width: photo.width,
+                        height: photo.height
+                    }));
+
+                    this.imageCache.set(cacheKey, images);
+                    return images;
+                } catch (error) {
+                    console.error('Error fetching images from Pexels:', error);
+                    return [];
+                }
+            }
+
+            extractKeywords(content) {
+                const text = content.toLowerCase();
+                const keywords = [];
+                
+                const businessTerms = ['business', 'meeting', 'office', 'team', 'work', 'project', 'strategy', 'planning', 'analysis', 'report', 'presentation', 'data', 'chart', 'graph', 'technology', 'innovation', 'growth', 'success', 'leadership', 'management'];
+                
+                if (businessTerms.some(term => text.includes(term))) {
+                    keywords.push('business', 'office', 'professional');
+                }
+                
+                const words = text.split(/\s+/)
+                    .filter(word => word.length > 4)
+                    .filter(word => !['this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'will', 'about', 'there', 'could', 'other', 'after', 'first', 'well', 'also', 'where', 'much', 'some', 'very', 'when', 'here', 'just', 'into', 'over', 'think', 'back', 'then', 'them', 'these', 'so', 'its', 'now', 'find', 'any', 'new', 'work', 'part', 'take', 'get', 'place', 'made', 'live', 'where', 'after', 'back', 'little', 'only', 'round', 'man', 'year', 'came', 'show', 'every', 'good', 'me', 'give', 'our', 'under', 'name', 'very', 'through', 'just', 'form', 'sentence', 'great', 'think', 'say', 'help', 'low', 'line', 'differ', 'turn', 'cause', 'much', 'mean', 'before', 'move', 'right', 'boy', 'old', 'too', 'same', 'she', 'all', 'there', 'when', 'up', 'use', 'word', 'how', 'said', 'an', 'each', 'which', 'she', 'do', 'how', 'their', 'if', 'will', 'up', 'other', 'about', 'out', 'many', 'then', 'them', 'these', 'so', 'some', 'her', 'would', 'make', 'like', 'into', 'him', 'has', 'two', 'more', 'go', 'no', 'way', 'could', 'my', 'than', 'first', 'been', 'call', 'who', 'its', 'now', 'find', 'long', 'down', 'day', 'did', 'get', 'come', 'made', 'may', 'part'].includes(word))
+                    .slice(0, 3);
+                
+                keywords.push(...words);
+                
+                return [...new Set(keywords)].slice(0, 5);
+            }
+
+            detectEmptySpace(previewElement) {
+                const emptySpaces = [];
+                
+                // Get all content blocks including page breaks
+                const allBlocks = previewElement.querySelectorAll('h1, h2, h3, p, ul, ol, .page-break');
+                console.log('🖼️ Found content blocks:', allBlocks.length);
+                
+                // Group content by pages (using page breaks as dividers)
+                const pages = [];
+                let currentPage = [];
+                
+                for (let i = 0; i < allBlocks.length; i++) {
+                    const block = allBlocks[i];
+                    
+                    if (block.classList.contains('page-break')) {
+                        if (currentPage.length > 0) {
+                            pages.push(currentPage);
+                            currentPage = [];
+                        }
+                    } else {
+                        currentPage.push(block);
+                    }
+                }
+                
+                // Add the last page if it has content
+                if (currentPage.length > 0) {
+                    pages.push(currentPage);
+                }
+                
+                console.log('🖼️ Found pages:', pages.length);
+                
+                // Check each page for empty space at the bottom
+                for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+                    const pageBlocks = pages[pageIndex];
+                    
+                    if (pageBlocks.length === 0) continue;
+                    
+                    // Find the last non-header element on this page
+                    let lastNonHeaderElement = null;
+                    for (let i = pageBlocks.length - 1; i >= 0; i--) {
+                        const block = pageBlocks[i];
+                        if (!block.tagName.match(/^H[1-3]$/)) {
+                            lastNonHeaderElement = block;
+                            break;
+                        }
+                    }
+                    
+                    // If no non-header element found, use the last element
+                    if (!lastNonHeaderElement) {
+                        lastNonHeaderElement = pageBlocks[pageBlocks.length - 1];
+                    }
+                    
+                    // Calculate space after the last element using a different approach
+                    const lastElementRect = lastNonHeaderElement.getBoundingClientRect();
+                    const previewRect = previewElement.getBoundingClientRect();
+                    
+                    // Calculate the position of the last element relative to the preview
+                    const lastElementBottom = lastElementRect.bottom - previewRect.top;
+                    
+                    // For multi-page content, we need to calculate space differently
+                    // Check if there's a next page break or if this is the last page
+                    let nextPageBreak = null;
+                    for (let i = 0; i < allBlocks.length; i++) {
+                        if (allBlocks[i].classList.contains('page-break')) {
+                            const pageBreakRect = allBlocks[i].getBoundingClientRect();
+                            const pageBreakTop = pageBreakRect.top - previewRect.top;
+                            
+                            if (pageBreakTop > lastElementBottom) {
+                                nextPageBreak = allBlocks[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    let availableSpace = 0;
+                    if (nextPageBreak) {
+                        // There's a next page, calculate space until the next page break
+                        const nextPageBreakRect = nextPageBreak.getBoundingClientRect();
+                        const nextPageBreakTop = nextPageBreakRect.top - previewRect.top;
+                        availableSpace = nextPageBreakTop - lastElementBottom;
+                    } else {
+                        // This is the last page, calculate space to the bottom of the content
+                        const contentHeight = previewElement.scrollHeight;
+                        availableSpace = contentHeight - lastElementBottom;
+                    }
+                    
+                    console.log(`🖼️ Page ${pageIndex + 1} - available space:`, availableSpace, 'minEmptySpace:', this.minEmptySpace);
+                    
+                    // Only add image if there's enough space and it's not right after a header
+                    const isAfterHeader = lastNonHeaderElement.tagName.match(/^H[1-3]$/);
+                    const hasEnoughSpace = availableSpace > this.minEmptySpace;
+                    
+                    if (hasEnoughSpace && !isAfterHeader) {
+                        console.log(`🖼️ Found bottom empty space on page ${pageIndex + 1}:`, availableSpace);
+                        emptySpaces.push({
+                            type: 'bottom',
+                            height: availableSpace,
+                            position: 'bottom',
+                            pageIndex: pageIndex,
+                            afterElement: lastNonHeaderElement
+                        });
+                    }
+                }
+                
+                // Also check for very large gaps between content blocks (but avoid headers)
+                for (let i = 0; i < allBlocks.length - 1; i++) {
+                    const currentBlock = allBlocks[i];
+                    const nextBlock = allBlocks[i + 1];
+                    
+                    // Skip if current block is a header
+                    if (currentBlock.tagName.match(/^H[1-3]$/)) continue;
+                    
+                    const currentRect = currentBlock.getBoundingClientRect();
+                    const nextRect = nextBlock.getBoundingClientRect();
+                    const previewRect = previewElement.getBoundingClientRect();
+                    
+                    const gap = nextRect.top - (currentRect.bottom + previewRect.top);
+                    
+                    // Only consider very large gaps (more than 2x minEmptySpace)
+                    if (gap > this.minEmptySpace * 2) {
+                        console.log('🖼️ Found large gap between blocks:', gap);
+                        emptySpaces.push({
+                            type: 'between',
+                            height: gap,
+                            position: 'after',
+                            afterElement: currentBlock
+                        });
+                    }
+                }
+                
+                console.log('🖼️ Total empty spaces found:', emptySpaces.length);
+                return emptySpaces;
+            }
+
+            async placeImage(emptySpace, content, previewElement) {
+                console.log('🖼️ placeImage called - currentImages:', this.currentImages.size, 'maxImagesPerPage:', this.maxImagesPerPage);
+                
+                if (this.currentImages.size >= this.maxImagesPerPage) {
+                    console.log('🖼️ Max images reached, skipping');
+                    return;
+                }
+
+                const keywords = this.extractKeywords(content);
+                const searchQuery = keywords.join(' ') || 'professional business';
+                console.log('🖼️ Searching for images with query:', searchQuery);
+                
+                try {
+                    const images = await this.searchImages(searchQuery, 3);
+                    console.log('🖼️ Found images:', images.length);
+                    
+                    if (images.length === 0) {
+                        console.log('🖼️ No images found, returning');
+                        return;
+                    }
+
+                    const selectedImage = images[Math.floor(Math.random() * images.length)];
+                    const imageId = `auto-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    console.log('🖼️ Selected image:', selectedImage.id, selectedImage.url);
+                    
+                    const imageElement = document.createElement('div');
+                    imageElement.className = 'auto-placed-image';
+                    imageElement.id = imageId;
+                    imageElement.innerHTML = `
+                        <img src="${selectedImage.url}" 
+                             alt="${selectedImage.alt}" 
+                             style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    `;
+
+                    // Position the image - always at the bottom of the page
+                    if (emptySpace.type === 'bottom' && emptySpace.afterElement) {
+                        console.log('🖼️ Placing image at bottom of page after element:', emptySpace.afterElement);
+                        emptySpace.afterElement.insertAdjacentElement('afterend', imageElement);
+                    } else if (emptySpace.type === 'between' && emptySpace.afterElement) {
+                        console.log('🖼️ Placing image after element (large gap):', emptySpace.afterElement);
+                        emptySpace.afterElement.insertAdjacentElement('afterend', imageElement);
+                    } else {
+                        // Fallback: place at the very end
+                        console.log('🖼️ Placing image at very end of document');
+                        previewElement.appendChild(imageElement);
+                    }
+
+                    this.currentImages.add(imageId);
+                    console.log('🖼️ Image placed successfully, current count:', this.currentImages.size);
+
+                } catch (error) {
+                    console.error('🖼️ Error placing image:', error);
+                }
+            }
+
+            async processPreviewForImages(content, previewElement, options = {}) {
+                const { demandOnly = false, ensureAtLeastOne = false, auto = false } = options;
+                console.log('🖼️ Processing images - autoImageEnabled:', this.autoImageEnabled, 'options:', options);
+                if (!this.autoImageEnabled && !demandOnly && !ensureAtLeastOne && !auto) return false;
+
+                this.clearAutoImages(previewElement);
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                let emptySpaces = this.detectEmptySpace(previewElement);
+                console.log('🖼️ Found empty spaces:', emptySpaces.length);
+
+                // If no space but we must ensure at least one (demo), create a bottom slot
+                if (emptySpaces.length === 0 && ensureAtLeastOne) {
+                    emptySpaces = [{ type: 'bottom', height: 0, position: 'bottom' }];
+                }
+
+                let placedCount = 0;
+                for (const emptySpace of emptySpaces) {
+                    if (this.currentImages.size >= this.maxImagesPerPage) {
+                        console.log('🖼️ Max images reached:', this.maxImagesPerPage);
+                        break;
+                    }
+                    console.log('🖼️ Placing image in empty space:', emptySpace);
+                    await this.placeImage(emptySpace, content, previewElement);
+                    placedCount += 1;
+                }
+
+                return placedCount > 0;
+            }
+
+            clearAutoImages(previewElement) {
+                const autoImages = previewElement.querySelectorAll('.auto-placed-image');
+                autoImages.forEach(img => img.remove());
+                this.currentImages.clear();
+            }
+        }
+
+        const imageManager = new TestImageManager();
+
+        function showStatus(message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div style="margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 4px; color: #1976d2;">${message}</div>`;
+        }
+
+        async function testImagePlacement() {
+            showStatus('Testing fixed multi-page image placement...');
+            const content = document.getElementById('pdfPreview').textContent;
+            const preview = document.getElementById('pdfPreview');
+            
+            const result = await imageManager.processPreviewForImages(content, preview, { auto: true });
+            
+            if (result) {
+                showStatus(`Success! Added ${imageManager.currentImages.size} image(s) across all pages with empty space.`);
+            } else {
+                showStatus('No empty space found or images could not be added.');
+            }
+        }
+
+        function clearImages() {
+            const preview = document.getElementById('pdfPreview');
+            imageManager.clearAutoImages(preview);
+            showStatus('All images cleared.');
+        }
+
+        function addMoreContent() {
+            const preview = document.getElementById('pdfPreview');
+            const newContent = `
+                <div class="page-break"></div>
+                <h2>Additional Analysis</h2>
+                <p>This section provides additional analysis and insights into our strategic approach.</p>
+                
+                <p>We believe that by following these guidelines, we can achieve our objectives and deliver exceptional value to our stakeholders.</p>
+            `;
+            preview.insertAdjacentHTML('beforeend', newContent);
+            showStatus('Additional content added. Try testing image placement again.');
+        }
+
+        // Set CSS variables
+        const preview = document.getElementById('pdfPreview');
+        preview.style.setProperty('--title-color', '#1e40af');
+        preview.style.setProperty('--header-color', '#3b82f6');
+        preview.style.setProperty('--body-color', '#475569');
+        preview.style.setProperty('--accent-color', '#3b82f6');
+        preview.style.setProperty('--title-size', '32px');
+        preview.style.setProperty('--header-size', '24px');
+        preview.style.setProperty('--body-size', '14px');
+        preview.style.setProperty('--margin-top', '1in');
+        preview.style.setProperty('--margin-bottom', '1in');
+        preview.style.setProperty('--margin-left', '1in');
+        preview.style.setProperty('--margin-right', '1in');
+        preview.style.setProperty('--page-width', '8.5in');
+        preview.style.setProperty('--page-height', '11in');
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Preview Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #contentInput { width: 100%; height: 200px; margin: 20px 0; }
+        #pdfPreview { 
+            border: 2px solid #3b82f6; 
+            padding: 20px; 
+            min-height: 300px; 
+            background: #f8fafc;
+            margin: 20px 0;
+        }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Simple Preview Test</h1>
+    
+    <div class="debug">
+        <h3>Debug Info:</h3>
+        <div id="debugOutput"></div>
+    </div>
+    
+    <textarea id="contentInput"># Test Document
+
+This is a test document.
+
+## Section 1
+
+- Item 1
+- Item 2
+
+**Bold text** and *italic text*</textarea>
+    
+    <div id="pdfPreview">
+        <p>Preview will appear here...</p>
+    </div>
+    
+    <button onclick="testUpdatePreview()">Test Update Preview</button>
+
+    <script>
+        function log(message) {
+            const debugOutput = document.getElementById('debugOutput');
+            debugOutput.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+            console.log(message);
+        }
+        
+        function testUpdatePreview() {
+            log('Testing updatePreview...');
+            
+            try {
+                const contentInput = document.getElementById('contentInput');
+                const preview = document.getElementById('pdfPreview');
+                
+                if (!contentInput) {
+                    log('ERROR: contentInput not found');
+                    return;
+                }
+                
+                if (!preview) {
+                    log('ERROR: pdfPreview not found');
+                    return;
+                }
+                
+                const content = contentInput.value;
+                log('Content length: ' + content.length);
+                
+                // Simple markdown parsing
+                let html = content
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/^- (.*$)/gim, '<li>$1</li>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>');
+                
+                // Wrap list items
+                html = html.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
+                
+                // Wrap paragraphs
+                if (!html.startsWith('<h') && !html.startsWith('<ul')) {
+                    html = '<p>' + html + '</p>';
+                }
+                
+                preview.innerHTML = html;
+                log('SUCCESS: Preview updated with HTML: ' + html.substring(0, 100) + '...');
+                
+            } catch (error) {
+                log('ERROR: ' + error.message);
+            }
+        }
+        
+        // Auto-test on load
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Page loaded');
+            testUpdatePreview();
+        });
+        
+        // Test on input
+        document.getElementById('contentInput').addEventListener('input', testUpdatePreview);
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Complete Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-content {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .page-break {
+            page-break-before: always;
+            border: 2px dashed #007bff;
+            padding: 10px;
+            margin: 20px 0;
+            background: #e7f3ff;
+            text-align: center;
+            font-weight: bold;
+        }
+        .result {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Complete Fix</h1>
+    
+    <div class="test-section">
+        <h2>Test Content with Three Hyphens</h2>
+        <p>This test uses the exact content from your image to see if the formatting issues are resolved.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Controls</h2>
+        <button onclick="testOriginalContent()">Test Original Content</button>
+        <button onclick="testFixedContent()">Test Fixed Content</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results" class="result">
+            <p>Click a button to test the content formatting.</p>
+        </div>
+    </div>
+
+    <script>
+        const originalContent = `themselves—they are tools for Kingdom impact.
+
+---
+
+## Biblical Examples
+
+• **Abraham:** Faithful giving and stewardship led to immense blessing.
+• **Joseph:** Smart management of resources during famine saved nations and elevated him to leadership.
+• **Solomon:** Wisdom in managing wealth and people allowed him to build a lasting legacy.
+
+---
+
+This is additional content that should appear after the three hyphens to test if the content flows properly.`;
+
+        function processInlineFormatting(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/---/g, '&nbsp;&mdash;&nbsp;&mdash;&nbsp;&mdash;&nbsp;'); // Replace three hyphens with spaced em dashes
+        }
+
+        function parseContent(content) {
+            const lines = content.split('\n');
+            let html = '';
+            let inList = false;
+            let lineCount = 0;
+            let firstH2Found = false;
+            const maxLinesPerPage = 30;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('# ')) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = processInlineFormatting(line.substring(2));
+                    html += `<h1>${headerText}</h1>`;
+                    lineCount += 3;
+                } else if (line.startsWith('## ')) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    
+                    // Smart page break logic
+                    let shouldAddPageBreak = false;
+                    
+                    if (lineCount > maxLinesPerPage - 2) {
+                        shouldAddPageBreak = true;
+                    } else if (html.length > 0 && firstH2Found) {
+                        let contentAfterHeader = 0;
+                        for (let j = i + 1; j < lines.length; j++) {
+                            const nextLine = lines[j].trim();
+                            if (nextLine.length > 0 && !nextLine.startsWith('#')) {
+                                contentAfterHeader++;
+                            }
+                            if (contentAfterHeader >= 3) break;
+                        }
+                        shouldAddPageBreak = contentAfterHeader >= 3;
+                    }
+                    
+                    if (shouldAddPageBreak) {
+                        html += '<div class="page-break">PAGE BREAK</div>';
+                        lineCount = 0;
+                    }
+                    
+                    firstH2Found = true;
+                    const headerText = processInlineFormatting(line.substring(3));
+                    html += `<h2>${headerText}</h2>`;
+                    lineCount += 2;
+                } else if (line.startsWith('### ')) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = processInlineFormatting(line.substring(4));
+                    html += `<h3>${headerText}</h3>`;
+                    lineCount += 2;
+                } else if (line.startsWith('- ')) {
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const listText = processInlineFormatting(line.substring(2));
+                    html += `<li>${listText}</li>`;
+                    lineCount += 1;
+                } else if (line.length > 0) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const paragraphText = processInlineFormatting(line);
+                    html += `<p>${paragraphText}</p>`;
+                    lineCount += 1;
+                } else {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    if (html && !html.endsWith('</p>') && !html.endsWith('</h1>') && !html.endsWith('</h2>') && !html.endsWith('</h3>')) {
+                        html += '<br>';
+                    }
+                }
+            }
+            
+            if (inList) {
+                html += '</ul>';
+            }
+            
+            return html;
+        }
+
+        function testOriginalContent() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Original Content (with issues):</h3>' + parseContent(originalContent);
+        }
+
+        function testFixedContent() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Fixed Content (should work properly):</h3>' + parseContent(originalContent);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '<p>Click a button to test the content formatting.</p>';
+        }
+    </script>
+</body>
+</html>
+
+

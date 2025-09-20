@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hyphen Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-content {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .before, .after {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .before {
+            background: #ffe6e6;
+            border-left: 4px solid #ff4444;
+        }
+        .after {
+            background: #e6ffe6;
+            border-left: 4px solid #44ff44;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Hyphen Fix</h1>
+    
+    <div class="test-section">
+        <h2>Problem</h2>
+        <p>Three hyphens (<code>---</code>) in text were being interpreted as horizontal rules instead of regular text.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Content</h2>
+        <div class="test-content">
+            <h3>Content with Three Hyphens</h3>
+            <p>This content contains three hyphens that should be treated as regular text:</p>
+            <ul>
+                <li><strong>Abraham:</strong> Faithful giving and stewardship led to immense blessing.</li>
+                <li><strong>Joseph:</strong> Smart management of resources during famine saved nations and elevated him to leadership.</li>
+                <li><strong>Solomon:</strong> Wisdom in managing wealth and people allowed him to build a lasting legacy.</li>
+            </ul>
+            <p>---</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Before Fix</h2>
+        <div class="before">
+            <p><strong>Problem:</strong> Three hyphens were converted to horizontal rules, creating unwanted visual separations.</p>
+            <div id="beforeResult">
+                <p>This would show a horizontal line instead of three hyphens.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>After Fix</h2>
+        <div class="after">
+            <p><strong>Solution:</strong> Three hyphens are now escaped and displayed as regular text.</p>
+            <div id="afterResult">
+                <p>This will show three hyphens as text: ---</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test</h2>
+        <button onclick="testHyphenFix()">Test Hyphen Processing</button>
+        <div id="testResult" class="test-content">
+            <p>Click the button to see how the hyphens are processed.</p>
+        </div>
+    </div>
+
+    <script>
+        function processInlineFormatting(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/---/g, '&#45;&#45;&#45;'); // Prevent three hyphens from being interpreted as horizontal rules
+        }
+
+        function testHyphenFix() {
+            const testContent = `# Biblical Examples
+
+• **Abraham:** Faithful giving and stewardship led to immense blessing.
+• **Joseph:** Smart management of resources during famine saved nations and elevated him to leadership.
+• **Solomon:** Wisdom in managing wealth and people allowed him to build a lasting legacy.
+
+---
+
+This is content after the three hyphens.`;
+
+            const lines = testContent.split('\n');
+            let html = '';
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('# ')) {
+                    const headerText = processInlineFormatting(line.substring(2));
+                    html += `<h1>${headerText}</h1>`;
+                } else if (line.startsWith('- ')) {
+                    const listText = processInlineFormatting(line.substring(2));
+                    html += `<li>${listText}</li>`;
+                } else if (line.length > 0) {
+                    const paragraphText = processInlineFormatting(line);
+                    html += `<p>${paragraphText}</p>`;
+                } else {
+                    html += '<br>';
+                }
+            }
+            
+            document.getElementById('testResult').innerHTML = html;
+            console.log('Hyphen fix test completed');
+        }
+
+        // Show the before/after examples
+        document.getElementById('beforeResult').innerHTML = `
+            <p>This would show a horizontal line instead of three hyphens.</p>
+            <hr style="border: 1px solid #ccc; margin: 10px 0;">
+            <p>Content after the horizontal rule.</p>
+        `;
+
+        document.getElementById('afterResult').innerHTML = `
+            <p>This will show three hyphens as text: ---</p>
+            <p>Content after the three hyphens.</p>
+        `;
+    </script>
+</body>
+</html>
+
+

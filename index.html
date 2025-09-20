@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StyledPages - Transform Content to Professional PDFs</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='20' y='15' width='60' height='80' rx='4' fill='%233b82f6'/><rect x='25' y='20' width='50' height='70' rx='2' fill='white'/><rect x='30' y='30' width='40' height='3' rx='1.5' fill='%233b82f6'/><rect x='30' y='40' width='35' height='2' rx='1' fill='%2364748b'/><rect x='30' y='50' width='30' height='2' rx='1' fill='%2364748b'/><rect x='30' y='60' width='25' height='2' rx='1' fill='%2364748b'/><circle cx='70' cy='25' r='3' fill='%2310b981'/><text x='50' y='85' font-family='Arial' font-size='8' font-weight='bold' text-anchor='middle' fill='%233b82f6'>SP</text></svg>">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -55,6 +56,15 @@
         window.firebaseDoc = doc;
         
         console.log('🔥 Firebase initialized with config:', firebaseConfig.projectId);
+    </script>
+    <script>
+        // Vercel Analytics
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.vercel-insights.com/v1/script.js';
+            script.defer = true;
+            document.head.appendChild(script);
+        })();
     </script>
 </head>
 <body>
@@ -140,14 +150,35 @@
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">📄</div>
-                    <div class="logo-text">
-                        <h1>StyledPages</h1>
-                        <span class="tagline">Transform content into professional PDFs</span>
+                <div class="logo-section">
+                    <div class="logo-badge">
+                        <div class="logo-icon">⚡</div>
+                    </div>
+                    <div class="brand-text">
+                        <h1 class="brand-name">StyledPages</h1>
+                        <p class="brand-tagline">AI-Powered PDF Generator</p>
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="cta-button" id="pricingBtn">
+                        <span class="button-text">Get Started</span>
+                        <span class="button-arrow">→</span>
+                    </button>
+                </div>
+                <!-- App Header Actions (hidden on landing page) -->
+                <div class="header-actions app-actions" id="appHeaderActions" style="display: none;">
+                    <button class="btn btn-outline" id="backToLandingBtn" style="display: none;">
+                        <span class="btn-icon">←</span>
+                        Back to Landing
+                    </button>
+                    <button class="btn btn-outline" id="insertImagesBtn">
+                        <span class="btn-icon">🖼️</span>
+                        Insert Images
+                    </button>
+                    <button class="btn btn-outline" id="pricingBtnApp">
+                        <span class="btn-icon">💰</span>
+                        Pricing
+                    </button>
                     <button class="btn btn-secondary" id="loadDemo">
                         <span class="btn-icon">✨</span>
                         Load Demo
@@ -163,8 +194,182 @@
             </div>
         </header>
 
-        <!-- Main Content -->
-        <div class="main-content">
+        <!-- Landing Page (shown when not logged in) -->
+        <div id="landingPage" class="landing-page">
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-title">Transform Content into Professional PDFs</h1>
+                    <p class="hero-subtitle">Create stunning documents in minutes with AI-powered formatting. No design skills required.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-large" id="getStartedBtn">
+                            <span class="btn-icon">🚀</span>
+                            Get Started Free
+                        </button>
+                        <button class="btn btn-outline btn-large" id="seeDemoBtn">
+                            <span class="btn-icon">✨</span>
+                            See Demo
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-preview">
+                    <div class="preview-mockup">
+                        <div class="mockup-header">
+                            <div class="mockup-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                        <div class="mockup-content">
+                            <h3>Your Document Title</h3>
+                            <p>This is how your content transforms into a beautiful, professional PDF with just a few clicks.</p>
+                            <ul>
+                                <li>Automatic formatting</li>
+                                <li>Professional themes</li>
+                                <li>One-click PDF generation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Free Banner -->
+            <div class="free-banner">
+                <div class="free-banner-content">
+                    <div class="free-badge">🎉</div>
+                    <h2>Everything is FREE!</h2>
+                    <p>Unlimited PDFs, all themes, automatic images, and premium features - all completely free!</p>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="features-section">
+                <div class="features-header">
+                    <h2>Powerful Features</h2>
+                    <p class="features-subtitle">Everything you need to create professional documents, completely free</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                        <div class="feature-icon">⚡</div>
+                        <h3>AI-Powered Formatting</h3>
+                        <p>Automatically detects headers, lists, and paragraphs. No manual formatting required.</p>
+                        <div class="feature-badge free">FREE</div>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                        <div class="feature-icon">🎨</div>
+                        <h3>Professional Themes</h3>
+                        <p>4 beautiful themes: Professional, Creative, Minimal, and Academic. All included free.</p>
+                        <div class="feature-badge free">FREE</div>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                        <div class="feature-icon">📸</div>
+                        <h3>Automatic Images</h3>
+                        <p>AI automatically places relevant images to make your PDFs look professional.</p>
+                        <div class="feature-badge free">FREE</div>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                        <div class="feature-icon">📄</div>
+                        <h3>One-Click PDF Download</h3>
+                        <p>Generate and download your formatted PDF in seconds. No watermarks.</p>
+                        <div class="feature-badge free">FREE</div>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+                        <div class="feature-icon">🚀</div>
+                        <h3>Unlimited PDFs</h3>
+                        <p>Create as many PDFs as you want. No monthly limits or restrictions.</p>
+                        <div class="feature-badge free">FREE</div>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="600">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Advanced Customization</h3>
+                        <p>Customize fonts, colors, margins, and layout to match your brand perfectly.</p>
+                        <div class="feature-badge free">FREE</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How It Works Section -->
+            <div class="how-it-works-section">
+                <div class="how-it-works-header">
+                    <h2>How It Works</h2>
+                    <p class="how-it-works-subtitle">Create professional PDFs in 3 simple steps</p>
+                </div>
+                <div class="steps-container">
+                    <div class="step" data-aos="fade-up" data-aos-delay="100">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Write Your Content</h3>
+                            <p>Simply type or paste your content. Use markdown formatting like # for headers, - for lists, and **bold** for emphasis.</p>
+                        </div>
+                    </div>
+                    <div class="step" data-aos="fade-up" data-aos-delay="200">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>AI Formats Automatically</h3>
+                            <p>Our AI instantly detects your content structure and applies professional formatting. Choose from 4 beautiful themes.</p>
+                        </div>
+                    </div>
+                    <div class="step" data-aos="fade-up" data-aos-delay="300">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Download Your PDF</h3>
+                            <p>Click download and get your professionally formatted PDF instantly. No watermarks, no limits, completely free!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits Section -->
+            <div class="benefits-section">
+                <div class="benefits-header">
+                    <h2>Perfect For</h2>
+                    <p class="benefits-subtitle">Who can benefit from StyledPages</p>
+                </div>
+                <div class="benefits-grid">
+                    <div class="benefit-card" data-aos="fade-up" data-aos-delay="100">
+                        <div class="benefit-icon">👨‍🏫</div>
+                        <h3>Educators</h3>
+                        <p>Create lesson plans, handouts, and educational materials that look professional and engaging.</p>
+                    </div>
+                    <div class="benefit-card" data-aos="fade-up" data-aos-delay="200">
+                        <div class="benefit-icon">💼</div>
+                        <h3>Business Professionals</h3>
+                        <p>Generate reports, proposals, and presentations that impress clients and colleagues.</p>
+                    </div>
+                    <div class="benefit-card" data-aos="fade-up" data-aos-delay="300">
+                        <div class="benefit-icon">📝</div>
+                        <h3>Content Creators</h3>
+                        <p>Transform your blog posts, articles, and content into beautiful PDFs for your audience.</p>
+                    </div>
+                    <div class="benefit-card" data-aos="fade-up" data-aos-delay="400">
+                        <div class="benefit-icon">🎯</div>
+                        <h3>Coaches & Consultants</h3>
+                        <p>Create client materials, guides, and resources that reflect your professional brand.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="cta-section">
+                <div class="cta-content">
+                    <div class="cta-badge">100% FREE FOREVER</div>
+                    <h2>Ready to Create Professional Documents?</h2>
+                    <p>Join thousands of users who create stunning PDFs with StyledPages - completely free!</p>
+                    <div class="cta-features">
+                        <span class="cta-feature">✓ No credit card required</span>
+                        <span class="cta-feature">✓ No monthly limits</span>
+                        <span class="cta-feature">✓ No watermarks</span>
+                    </div>
+                    <button class="btn btn-primary btn-large" id="ctaGetStartedBtn">
+                        <span class="btn-icon">🚀</span>
+                        Start Creating Free
+                    </button>
+                    <p class="cta-note">Get started in 30 seconds - no signup required for demo</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content (shown when logged in) -->
+        <div id="mainContent" class="main-content" style="display: none;">
             <!-- Input Section -->
             <div class="input-section">
                 <div class="section-header">
@@ -502,54 +707,8 @@ This is how your content will look when transformed into a beautiful PDF with AI
             </div>
         </div>
 
-        <!-- Features Section -->
-        <div class="features-section">
-            <div class="features-header">
-                <h2>Why Choose StyledPages?</h2>
-                <p class="features-subtitle">Transform your content creation workflow with powerful, intelligent design tools</p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Instant Formatting</h3>
-                    <p>Automatically detects headers, lists, and paragraphs. No manual formatting required.</p>
-                    <div class="feature-badge">AI-Powered</div>
-                </div>
-                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
-                    <div class="feature-icon">🎨</div>
-                    <h3>Professional Templates</h3>
-                    <p>Multiple themes to choose from. Every PDF looks polished and professional.</p>
-                    <div class="feature-badge">4 Themes</div>
-                </div>
-                <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
-                    <div class="feature-icon">📄</div>
-                    <h3>One-Click PDF Download</h3>
-                    <p>Generate and download your formatted PDF in seconds.</p>
-                    <div class="feature-badge">Instant</div>
-                </div>
-                <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
-                    <div class="feature-icon">🚀</div>
-                    <h3>Zero Design Skills</h3>
-                    <p>Perfect for educators, coaches, and content creators. No design experience needed.</p>
-                    <div class="feature-badge">Beginner-Friendly</div>
-                </div>
-            </div>
-            <div class="features-cta">
-                <p>Ready to create professional documents in minutes?</p>
-                <button class="btn btn-primary btn-large" id="scrollToTop">
-                    <span class="btn-icon">🚀</span>
-                    Get Started Now
-                </button>
-            </div>
-        </div>
     </div>
 
     <script src="script.js"></script>
-    
-    <!-- Vercel Analytics -->
-    <script>
-        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-    </script>
-    <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
 </body>
 </html>

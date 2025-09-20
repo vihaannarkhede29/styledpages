@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Formatting Fixes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-content {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .page-break {
+            page-break-before: always;
+            border: 2px dashed #007bff;
+            padding: 10px;
+            margin: 20px 0;
+            background: #e7f3ff;
+            text-align: center;
+            font-weight: bold;
+        }
+        .checkbox-group {
+            margin: 10px 0;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .checkbox-group input {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Formatting Fixes</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>This test demonstrates the improved formatting that prevents:</p>
+        <ol>
+            <li>Headers appearing alone on pages (orphaned headers)</li>
+            <li>Unnecessary blank pages</li>
+            <li>Poor page break placement</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Controls</h2>
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="sectionPageBreak" checked>
+                Start H1 headers on new page
+            </label>
+        </div>
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="subsectionPageBreak" checked>
+                Start H2 headers on new page
+            </label>
+        </div>
+        <button onclick="testFormatting()">Test Improved Formatting</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Content</h2>
+        <div class="test-content">
+            <h3>Content Designed to Test Page Breaks</h3>
+            <p>This content is specifically designed to test the improved page break logic and prevent orphaned headers.</p>
+        </div>
+    </div>
+
+    <div id="preview" class="test-content">
+        <h2>Preview will appear here</h2>
+        <p>Click "Test Improved Formatting" to see the formatted content.</p>
+    </div>
+
+    <script>
+        // Test content that would previously cause formatting issues
+        const testContent = `# Main Title
+
+This is the introduction to our document. This content should help demonstrate the improved formatting.
+
+## Section One
+
+This is the first section with some content. The header should not appear alone on a page.
+
+This is more content for the first section to ensure there's enough text to prevent orphaned headers.
+
+## Section Two
+
+This is the second section. The improved logic should ensure this header doesn't appear alone.
+
+More content for section two to demonstrate proper page break behavior.
+
+## Section Three
+
+This is the third section with additional content to test the formatting improvements.
+
+This section has enough content to justify proper page breaks and prevent orphaned headers.
+
+## Section Four
+
+This is the fourth section that should demonstrate the improved page break logic.
+
+More content to ensure proper formatting and prevent blank pages.
+
+## Section Five
+
+This is the fifth section with content to test the formatting fixes.
+
+Additional content to demonstrate the improved page break behavior.
+
+## Section Six
+
+This is the sixth section that should show the improved formatting.
+
+More content to test the page break improvements.
+
+## Section Seven
+
+This is the seventh section with content to demonstrate the fixes.
+
+Additional content to ensure proper page layout.
+
+## Section Eight
+
+This is the eighth section that should demonstrate the improved formatting.
+
+More content to test the page break logic.
+
+## Section Nine
+
+This is the ninth section with content to show the improvements.
+
+Additional content to demonstrate proper formatting.
+
+## Section Ten
+
+This is the tenth section that should show the improved page break behavior.
+
+More content to test the formatting fixes.
+
+## Section Eleven
+
+This is the eleventh section with content to demonstrate the improvements.
+
+Additional content to ensure proper page layout.
+
+## Section Twelve
+
+This is the twelfth section that should show the improved formatting.
+
+More content to test the page break logic.
+
+## Section Thirteen
+
+This is the thirteenth section with content to demonstrate the fixes.
+
+Additional content to ensure proper formatting.
+
+## Section Fourteen
+
+This is the fourteenth section that should demonstrate the improved page break behavior.
+
+More content to test the formatting improvements.
+
+## Section Fifteen
+
+This is the fifteenth section with content to show the improvements.
+
+Additional content to demonstrate proper page layout.
+
+## Conclusion
+
+This concludes our test document. The improved formatting should prevent orphaned headers and unnecessary blank pages.`;
+
+        function testFormatting() {
+            const sectionPageBreakCheck = document.getElementById('sectionPageBreak');
+            const subsectionPageBreakCheck = document.getElementById('subsectionPageBreak');
+            const preview = document.getElementById('preview');
+            
+            // Simulate the improved page break logic
+            const lines = testContent.split('\n');
+            let html = '';
+            let inList = false;
+            let lineCount = 0;
+            let firstH2Found = false;
+            const maxLinesPerPage = 30; // Approximate lines per page
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('# ')) {
+                    // Main header
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    
+                    // Add page break before H1 headers if user has enabled it AND there's enough content to follow
+                    if (html.length > 0 && sectionPageBreakCheck.checked) {
+                        // Check if there's enough content after this header to justify a page break
+                        let contentAfterHeader = 0;
+                        for (let j = i + 1; j < lines.length; j++) {
+                            const nextLine = lines[j].trim();
+                            if (nextLine.length > 0 && !nextLine.startsWith('#')) {
+                                contentAfterHeader++;
+                            }
+                            if (contentAfterHeader >= 3) break; // Need at least 3 lines of content
+                        }
+                        
+                        if (contentAfterHeader >= 3) {
+                            html += '<div class="page-break">PAGE BREAK (H1)</div>';
+                            lineCount = 0;
+                        }
+                    }
+                    
+                    const headerText = line.substring(2);
+                    html += `<h1>${headerText}</h1>`;
+                    lineCount += 3; // H1 takes 3 lines
+                } else if (line.startsWith('## ')) {
+                    // Subheader
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    
+                    // Add page break before H2 headers if:
+                    // 1. User has enabled it AND it's not the first H2 AND there's enough content to follow, OR
+                    // 2. Content would overflow to next page (regardless of user preference)
+                    let shouldAddPageBreak = false;
+                    
+                    if (lineCount > maxLinesPerPage - 2) {
+                        // Content would overflow, always add page break
+                        shouldAddPageBreak = true;
+                    } else if (html.length > 0 && subsectionPageBreakCheck.checked && firstH2Found) {
+                        // Check if there's enough content after this header to justify a page break
+                        let contentAfterHeader = 0;
+                        for (let j = i + 1; j < lines.length; j++) {
+                            const nextLine = lines[j].trim();
+                            if (nextLine.length > 0 && !nextLine.startsWith('#')) {
+                                contentAfterHeader++;
+                            }
+                            if (contentAfterHeader >= 3) break; // Need at least 3 lines of content
+                        }
+                        
+                        shouldAddPageBreak = contentAfterHeader >= 3;
+                    }
+                    
+                    if (shouldAddPageBreak) {
+                        html += '<div class="page-break">PAGE BREAK (H2)</div>';
+                        lineCount = 0;
+                    }
+                    
+                    // Mark that we've found the first H2
+                    firstH2Found = true;
+                    
+                    const headerText = line.substring(3);
+                    html += `<h2>${headerText}</h2>`;
+                    lineCount += 2; // H2 takes 2 lines
+                } else if (line.startsWith('### ')) {
+                    // Small header
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = line.substring(4);
+                    html += `<h3>${headerText}</h3>`;
+                    lineCount += 2; // H3 takes 2 lines
+                } else if (line.startsWith('- ')) {
+                    // List item
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const listText = line.substring(2);
+                    html += `<li>${listText}</li>`;
+                    lineCount += 1; // List item takes 1 line
+                } else if (line.length > 0) {
+                    // Regular paragraph
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    html += `<p>${line}</p>`;
+                    lineCount += 1; // Paragraph takes 1 line
+                } else {
+                    // Empty line
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    // Add spacing for empty lines
+                    if (html && !html.endsWith('</p>') && !html.endsWith('</h1>') && !html.endsWith('</h2>') && !html.endsWith('</h3>')) {
+                        html += '<br>';
+                    }
+                }
+            }
+            
+            preview.innerHTML = html;
+            console.log('Formatting test completed');
+        }
+    </script>
+</body>
+</html>
+
+

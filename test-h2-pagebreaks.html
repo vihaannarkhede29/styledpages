@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H2 Page Break Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-content {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .checkbox-group {
+            margin: 10px 0;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .checkbox-group input {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>H2 Page Break Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>This test demonstrates the H2 page break behavior:</p>
+        <ol>
+            <li>Check "Start H2 headers on new page" - H2 headers should start on new pages</li>
+            <li>Uncheck "Start H2 headers on new page" - H2 headers should start on same page</li>
+            <li>When unchecked, H2 should still start on new page if content would span multiple pages</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Controls</h2>
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="subsectionPageBreak" checked>
+                Start H2 headers on new page
+            </label>
+        </div>
+        <button onclick="testH2Behavior()">Test H2 Page Breaks</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Content</h2>
+        <div class="test-content">
+            <h3>Sample Content for Testing</h3>
+            <p>This is a paragraph that will take up some space on the page. It should help demonstrate how H2 headers behave when there's content before them.</p>
+            <p>Another paragraph to add more content and make the page longer. This will help test the page break logic.</p>
+            <p>Yet another paragraph to ensure we have enough content to test the overflow behavior.</p>
+        </div>
+    </div>
+
+    <div id="preview" class="test-content">
+        <h2>Preview will appear here</h2>
+        <p>Click "Test H2 Page Breaks" to see the formatted content.</p>
+    </div>
+
+    <script>
+        // Simple test content with multiple H2 headers
+        const testContent = `# Main Title
+
+This is some introductory content that should appear before the first H2 header.
+
+## First H2 Header
+
+This is content under the first H2 header. It should demonstrate how the page break logic works.
+
+This is another paragraph under the first H2 header to add more content.
+
+## Second H2 Header
+
+This is content under the second H2 header. Depending on the checkbox setting, this might start on a new page or continue on the same page.
+
+This is more content to test the behavior.
+
+## Third H2 Header
+
+This is content under the third H2 header. This should help demonstrate the page break behavior.
+
+## Fourth H2 Header
+
+This is content under the fourth H2 header. By this point, we should have enough content to test the overflow behavior.
+
+This is a very long paragraph that contains a lot of text to make sure we have enough content to potentially cause page overflow. This paragraph should be long enough to demonstrate how the system handles H2 headers when there's not enough space on the current page.
+
+## Fifth H2 Header
+
+This is the final H2 header in our test. This should help demonstrate the complete behavior of the H2 page break system.
+
+This is the final paragraph of our test content.`;
+
+        function testH2Behavior() {
+            const checkbox = document.getElementById('subsectionPageBreak');
+            const preview = document.getElementById('preview');
+            
+            // Simulate the page break logic
+            const lines = testContent.split('\n');
+            let html = '';
+            let inList = false;
+            let lineCount = 0;
+            let firstH2Found = false;
+            const maxLinesPerPage = 30; // Approximate lines per page
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('# ')) {
+                    // Main header
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = line.substring(2);
+                    html += `<h1>${headerText}</h1>`;
+                    lineCount += 3; // H1 takes 3 lines
+                } else if (line.startsWith('## ')) {
+                    // Subheader
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    
+                    // Add page break before H2 headers if:
+                    // 1. User has enabled it AND it's not the first H2, OR
+                    // 2. Content would overflow to next page (regardless of user preference)
+                    const shouldAddPageBreak = (html.length > 0 && checkbox.checked && firstH2Found) || 
+                                             (lineCount > maxLinesPerPage - 2); // H2 takes 2 lines, so check if adding it would overflow
+                    
+                    if (shouldAddPageBreak) {
+                        html += '<div style="page-break-before: always; border: 2px dashed #007bff; padding: 10px; margin: 10px 0; background: #e7f3ff; text-align: center; font-weight: bold;">PAGE BREAK</div>';
+                        lineCount = 0;
+                    }
+                    
+                    // Mark that we've found the first H2
+                    firstH2Found = true;
+                    
+                    const headerText = line.substring(3);
+                    html += `<h2>${headerText}</h2>`;
+                    lineCount += 2; // H2 takes 2 lines
+                } else if (line.startsWith('### ')) {
+                    // Small header
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = line.substring(4);
+                    html += `<h3>${headerText}</h3>`;
+                    lineCount += 2; // H3 takes 2 lines
+                } else if (line.startsWith('- ')) {
+                    // List item
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const listText = line.substring(2);
+                    html += `<li>${listText}</li>`;
+                    lineCount += 1; // List item takes 1 line
+                } else if (line.length > 0) {
+                    // Regular paragraph
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    html += `<p>${line}</p>`;
+                    lineCount += 1; // Paragraph takes 1 line
+                } else {
+                    // Empty line
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    // Add spacing for empty lines
+                    if (html && !html.endsWith('</p>') && !html.endsWith('</h1>') && !html.endsWith('</h2>') && !html.endsWith('</h3>')) {
+                        html += '<br>';
+                    }
+                }
+            }
+            
+            preview.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+
+

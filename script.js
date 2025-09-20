@@ -6,6 +6,257 @@ function trackEvent(eventName, properties = {}) {
     console.log('Analytics Event:', eventName, properties);
 }
 
+// Pexels API Integration for Automatic Image Placement
+class ImageManager {
+    constructor() {
+        this.pexelsApiKey = '01dD2keJqF7zBQJBZosCJUXvjtMtc56YLcqi0OSnYipTQW9IbitELxAN';
+        this.baseUrl = 'https://api.pexels.com/v1';
+        this.imageCache = new Map();
+        this.autoImageEnabled = false;
+        this.minEmptySpace = 50; // Minimum pixels of empty space to trigger image placement
+        this.maxImagesPerPage = 5;
+        this.currentImages = new Set();
+    }
+
+    // Search for images based on content keywords
+    async searchImages(query, perPage = 5) {
+        try {
+            const cacheKey = `search_${query}_${perPage}`;
+            if (this.imageCache.has(cacheKey)) {
+                return this.imageCache.get(cacheKey);
+            }
+
+            const response = await fetch(`${this.baseUrl}/search?query=${encodeURIComponent(query)}&per_page=${perPage}`, {
+                headers: {
+                    'Authorization': this.pexelsApiKey
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Pexels API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const images = data.photos.map(photo => ({
+                id: photo.id,
+                url: photo.src.medium,
+                alt: photo.alt,
+                photographer: photo.photographer,
+                photographerUrl: photo.photographer_url,
+                width: photo.width,
+                height: photo.height
+            }));
+
+            this.imageCache.set(cacheKey, images);
+            return images;
+        } catch (error) {
+            console.error('Error fetching images from Pexels:', error);
+            return [];
+        }
+    }
+
+    // Extract keywords from content for image search
+    extractKeywords(content) {
+        const text = content.toLowerCase();
+        const keywords = [];
+        
+        // Common business/professional terms
+        const businessTerms = ['business', 'meeting', 'office', 'team', 'work', 'project', 'strategy', 'planning', 'analysis', 'report', 'presentation', 'data', 'chart', 'graph', 'technology', 'innovation', 'growth', 'success', 'leadership', 'management'];
+        
+        // Common academic terms
+        const academicTerms = ['research', 'study', 'analysis', 'theory', 'concept', 'methodology', 'experiment', 'data', 'results', 'conclusion', 'academic', 'education', 'learning', 'knowledge', 'science', 'discovery'];
+        
+        // Common creative terms
+        const creativeTerms = ['design', 'creative', 'art', 'color', 'style', 'beautiful', 'inspiration', 'idea', 'concept', 'visual', 'aesthetic', 'modern', 'elegant', 'minimalist'];
+        
+        // Check for business content
+        if (businessTerms.some(term => text.includes(term))) {
+            keywords.push('business', 'office', 'professional');
+        }
+        
+        // Check for academic content
+        if (academicTerms.some(term => text.includes(term))) {
+            keywords.push('academic', 'research', 'education');
+        }
+        
+        // Check for creative content
+        if (creativeTerms.some(term => text.includes(term))) {
+            keywords.push('creative', 'design', 'art');
+        }
+        
+        // Extract specific nouns and important words
+        const words = text.split(/\s+/)
+            .filter(word => word.length > 4)
+            .filter(word => !['this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'will', 'about', 'there', 'could', 'other', 'after', 'first', 'well', 'also', 'where', 'much', 'some', 'very', 'when', 'here', 'just', 'into', 'over', 'think', 'back', 'then', 'them', 'these', 'so', 'its', 'now', 'find', 'any', 'new', 'work', 'part', 'take', 'get', 'place', 'made', 'live', 'where', 'after', 'back', 'little', 'only', 'round', 'man', 'year', 'came', 'show', 'every', 'good', 'me', 'give', 'our', 'under', 'name', 'very', 'through', 'just', 'form', 'sentence', 'great', 'think', 'say', 'help', 'low', 'line', 'differ', 'turn', 'cause', 'much', 'mean', 'before', 'move', 'right', 'boy', 'old', 'too', 'same', 'she', 'all', 'there', 'when', 'up', 'use', 'word', 'how', 'said', 'an', 'each', 'which', 'she', 'do', 'how', 'their', 'if', 'will', 'up', 'other', 'about', 'out', 'many', 'then', 'them', 'these', 'so', 'some', 'her', 'would', 'make', 'like', 'into', 'him', 'has', 'two', 'more', 'go', 'no', 'way', 'could', 'my', 'than', 'first', 'been', 'call', 'who', 'its', 'now', 'find', 'long', 'down', 'day', 'did', 'get', 'come', 'made', 'may', 'part'].includes(word))
+            .slice(0, 3);
+        
+        keywords.push(...words);
+        
+        // Remove duplicates and return top keywords
+        return [...new Set(keywords)].slice(0, 5);
+    }
+
+    // Detect empty space in the preview - improved for multi-page content
+    detectEmptySpace(previewElement) {
+        const emptySpaces = [];
+        
+        // Get all content blocks including page breaks
+        const allBlocks = previewElement.querySelectorAll('h1, h2, h3, p, ul, ol, .page-break');
+        console.log('🖼️ Found content blocks:', allBlocks.length);
+        
+        // Group content by pages (using page breaks as dividers)
+        const pages = [];
+        let currentPage = [];
+        
+        for (let i = 0; i < allBlocks.length; i++) {
+            const block = allBlocks[i];
+            
+            if (block.classList.contains('page-break')) {
+                if (currentPage.length > 0) {
+                    pages.push(currentPage);
+                    currentPage = [];
+                }
+            } else {
+                currentPage.push(block);
+            }
+        }
+        
+        // Add the last page if it has content
+        if (currentPage.length > 0) {
+            pages.push(currentPage);
+        }
+        
+        console.log('🖼️ Found pages:', pages.length);
+        
+        // Check each page for empty space at the bottom
+        for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+            const pageBlocks = pages[pageIndex];
+            
+            if (pageBlocks.length === 0) continue;
+            
+            // Find the last element on this page (regardless of type)
+            let lastElementOnPage = pageBlocks[pageBlocks.length - 1];
+            
+            // If the last element is a header, we still want to place the image after it
+            // as it should be the last thing on the page
+            if (!lastElementOnPage) {
+                continue; // Skip empty pages
+            }
+            
+            // Calculate space after the last element using a different approach
+            const lastElementRect = lastElementOnPage.getBoundingClientRect();
+            const previewRect = previewElement.getBoundingClientRect();
+            
+            // Calculate the position of the last element relative to the preview
+            const lastElementBottom = lastElementRect.bottom - previewRect.top;
+            
+            // For multi-page content, we need to calculate space differently
+            // Check if there's a next page break or if this is the last page
+            let nextPageBreak = null;
+            for (let i = 0; i < allBlocks.length; i++) {
+                if (allBlocks[i].classList.contains('page-break')) {
+                    const pageBreakRect = allBlocks[i].getBoundingClientRect();
+                    const pageBreakTop = pageBreakRect.top - previewRect.top;
+                    
+                    if (pageBreakTop > lastElementBottom) {
+                        nextPageBreak = allBlocks[i];
+                        break;
+                    }
+                }
+            }
+            
+            let availableSpace = 0;
+            if (nextPageBreak) {
+                // There's a next page, calculate space until the next page break
+                const nextPageBreakRect = nextPageBreak.getBoundingClientRect();
+                const nextPageBreakTop = nextPageBreakRect.top - previewRect.top;
+                availableSpace = nextPageBreakTop - lastElementBottom;
+            } else {
+                // This is the last page, calculate space to the bottom of the content
+                const contentHeight = previewElement.scrollHeight;
+                availableSpace = contentHeight - lastElementBottom;
+            }
+            
+            console.log(`🖼️ Page ${pageIndex + 1} - available space:`, availableSpace, 'minEmptySpace:', this.minEmptySpace);
+            
+            // Only add image if there's enough space
+            const hasEnoughSpace = availableSpace > this.minEmptySpace;
+            
+            if (hasEnoughSpace) {
+                console.log(`🖼️ Found bottom empty space on page ${pageIndex + 1}:`, availableSpace);
+                emptySpaces.push({
+                    type: 'bottom',
+                    height: availableSpace,
+                    position: 'bottom',
+                    pageIndex: pageIndex,
+                    afterElement: lastElementOnPage
+                });
+            }
+        }
+        
+        // Also check for very large gaps between content blocks
+        for (let i = 0; i < allBlocks.length - 1; i++) {
+            const currentBlock = allBlocks[i];
+            const nextBlock = allBlocks[i + 1];
+            
+            // Skip if next block is a page break (we want images at the end of pages)
+            if (nextBlock.classList.contains('page-break')) continue;
+            
+            const currentRect = currentBlock.getBoundingClientRect();
+            const nextRect = nextBlock.getBoundingClientRect();
+            const previewRect = previewElement.getBoundingClientRect();
+            
+            const gap = nextRect.top - (currentRect.bottom + previewRect.top);
+            
+            // Only consider very large gaps (more than 2x minEmptySpace)
+            if (gap > this.minEmptySpace * 2) {
+                console.log('🖼️ Found large gap between blocks:', gap);
+                emptySpaces.push({
+                    type: 'between',
+                    height: gap,
+                    position: 'after',
+                    afterElement: currentBlock
+                });
+            }
+        }
+        
+        console.log('🖼️ Total empty spaces found:', emptySpaces.length);
+        return emptySpaces;
+    }
+
+    // Place image in empty space - DISABLED
+    async placeImage(emptySpace, content, previewElement) {
+        // Image placement is disabled - no images will be placed
+        console.log('🖼️ Image placement disabled - skipping');
+        return;
+    }
+
+    // Process preview for automatic image placement - DISABLED
+    async processPreviewForImages(content, previewElement, options = {}) {
+        // Image placement is disabled - no images will be processed
+        console.log('🖼️ Image processing disabled - skipping');
+        return false;
+    }
+
+    // Clear all auto-placed images
+    clearAutoImages(previewElement) {
+        const autoImages = previewElement.querySelectorAll('.auto-placed-image');
+        autoImages.forEach(img => img.remove());
+        this.currentImages.clear();
+    }
+
+    // Toggle automatic image placement
+    toggleAutoImages(enabled) {
+        this.autoImageEnabled = enabled;
+        if (!enabled) {
+            const preview = document.getElementById('pdfPreview');
+            if (preview) {
+                this.clearAutoImages(preview);
+            }
+        }
+    }
+}
+
 // Authentication System
 class AuthManager {
     constructor() {
@@ -76,13 +327,24 @@ class AuthManager {
             }
         } catch (error) {
             console.error('Error loading user data:', error);
-            // Fallback to default user data
+            // Fallback to default user data when offline or error
             this.userData = {
                 tier: 'free',
                 downloadsThisMonth: 0,
                 createdAt: new Date().toISOString(),
                 lastLogin: new Date().toISOString()
             };
+            
+            // Try to load from localStorage as backup
+            const localData = localStorage.getItem('userData');
+            if (localData) {
+                try {
+                    this.userData = { ...this.userData, ...JSON.parse(localData) };
+                    console.log('Loaded user data from localStorage backup');
+                } catch (e) {
+                    console.warn('Could not parse localStorage user data');
+                }
+            }
         }
     }
 
@@ -90,8 +352,18 @@ class AuthManager {
         try {
             await window.firebaseSetDoc(window.firebaseDoc(window.firebaseDb, 'users', uid), this.userData);
             console.log('User data saved');
+            
+            // Also save to localStorage as backup
+            localStorage.setItem('userData', JSON.stringify(this.userData));
         } catch (error) {
             console.error('Error saving user data:', error);
+            // Save to localStorage as fallback
+            try {
+                localStorage.setItem('userData', JSON.stringify(this.userData));
+                console.log('User data saved to localStorage as fallback');
+            } catch (e) {
+                console.error('Failed to save to localStorage:', e);
+            }
         }
     }
 
@@ -263,7 +535,7 @@ class AuthManager {
             this.hideAccountModal();
 
             // Show success message
-            alert('Account created successfully! You now have 3 free PDFs this month.');
+            alert('Account created successfully! You now have unlimited PDFs for free!');
 
         } catch (error) {
             console.error('Signup error:', error);
@@ -317,7 +589,30 @@ class AuthManager {
             this.updateUI();
             this.hideAccountModal();
 
-            alert('Welcome back!');
+            // Show welcome message briefly
+            const welcomeMsg = document.createElement('div');
+            welcomeMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                z-index: 10000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease-out;
+            `;
+            welcomeMsg.textContent = '✅ Welcome back!';
+            document.body.appendChild(welcomeMsg);
+            
+            // Remove welcome message after 3 seconds
+            setTimeout(() => {
+                if (welcomeMsg.parentNode) {
+                    welcomeMsg.parentNode.removeChild(welcomeMsg);
+                }
+            }, 3000);
 
         } catch (error) {
             console.error('Login error:', error);
@@ -493,7 +788,30 @@ class AuthManager {
             this.updateUI();
             this.hideAccountModal();
 
-            alert(`Welcome ${user.displayName || user.email}! You're now signed in with Google.`);
+            // Show welcome message briefly
+            const welcomeMsg = document.createElement('div');
+            welcomeMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                z-index: 10000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease-out;
+            `;
+            welcomeMsg.textContent = `✅ Welcome ${user.displayName || user.email}!`;
+            document.body.appendChild(welcomeMsg);
+            
+            // Remove welcome message after 3 seconds
+            setTimeout(() => {
+                if (welcomeMsg.parentNode) {
+                    welcomeMsg.parentNode.removeChild(welcomeMsg);
+                }
+            }, 3000);
 
         } catch (error) {
             console.error('Google Sign-In error:', error);
@@ -669,13 +987,17 @@ class UsageTracker {
     }
 
     getMaxDownloads() {
-        const tiers = {
-            'anonymous_free': 3,
-            'free': 3,
-            'pro': -1, // unlimited
-            'enterprise': -1
-        };
-        return tiers[this.userTier] || 3;
+        // For testing: make all features available to free users
+        return -1; // unlimited for all users
+        
+        // Original code (commented out for testing):
+        // const tiers = {
+        //     'anonymous_free': 3,
+        //     'free': 3,
+        //     'pro': -1, // unlimited
+        //     'enterprise': -1
+        // };
+        // return tiers[this.userTier] || 3;
     }
 
     getMonthlyUsage() {
@@ -702,25 +1024,30 @@ class UsageTracker {
             hasAccount: this.hasAccount()
         });
         
-        // Check word count limit for free users (max 1000 words)
-        if (this.userTier === 'free' || this.userTier === 'anonymous_free') {
-            const wordCount = this.getCurrentWordCount();
-            
-            if (wordCount > 1000) {
-                this.showWordCountPrompt();
-                return false;
-            }
-        }
+        // Check word count limit for free users (max 1000 words) - DISABLED FOR TESTING
+        // if (this.userTier === 'free' || this.userTier === 'anonymous_free') {
+        //     const wordCount = this.getCurrentWordCount();
+        //     
+        //     if (wordCount > 1000) {
+        //         this.showWordCountPrompt();
+        //         return false;
+        //     }
+        // }
         
-        if (monthlyUsage >= maxDownloads - 1 && !this.hasAccount()) {
-            this.showAccountPrompt();
-            return false;
-        }
+        // Show upgrade prompt when approaching limits - DISABLED FOR TESTING
+        // if (monthlyUsage >= maxDownloads - 1 && maxDownloads > 0) {
+        //     if (!this.hasAccount()) {
+        //     this.showAccountPrompt();
+        //     } else if (this.userTier === 'free' || this.userTier === 'anonymous_free') {
+        //         this.showUpgradePrompt();
+        //     }
+        //     return false;
+        // }
         
-        if (monthlyUsage >= maxDownloads) {
-            this.showUpgradePrompt();
-            return false;
-        }
+        // if (monthlyUsage >= maxDownloads) {
+        //     this.showUpgradePrompt();
+        //     return false;
+        // }
         
         return true;
     }
@@ -739,7 +1066,10 @@ class UsageTracker {
             // Update the user data in memory
             window.styledPages.authManager.userData.downloadsThisMonth = newUsage;
             
-            // Save to Firebase
+            // Save to Firebase only if online and user is present; otherwise fallback silently
+            const canWriteToFirebase = typeof navigator !== 'undefined' && navigator.onLine &&
+                window.firebaseDb && window.styledPages.authManager.currentUser;
+            if (canWriteToFirebase) {
             try {
                 await window.styledPages.authManager.saveUserData(window.styledPages.authManager.currentUser.uid);
                 console.log('PDF download tracked in Firebase:', {
@@ -748,8 +1078,12 @@ class UsageTracker {
                     max: this.getMaxDownloads()
                 });
             } catch (error) {
-                console.error('Error saving download count to Firebase:', error);
-                // Fallback to localStorage
+                    console.warn('Firebase save failed, using localStorage fallback:', error);
+                    const currentLocal = this.getMonthlyUsage();
+                    const newUsageLocal = currentLocal + 1;
+                    localStorage.setItem(this.monthlyKey, newUsageLocal);
+                }
+            } else {
                 const currentLocal = this.getMonthlyUsage();
                 const newUsageLocal = currentLocal + 1;
                 localStorage.setItem(this.monthlyKey, newUsageLocal);
@@ -783,13 +1117,13 @@ class UsageTracker {
     showAccountPrompt() {
         console.log('Showing account creation prompt');
         // For now, just log - we'll add UI later
-        alert('You\'ve used 2 of your 3 free PDFs this month. Create a free account to get 1 more PDF, or upgrade to Pro for unlimited downloads.');
+        alert('Create a free account to save your progress and access unlimited PDFs!');
     }
 
     showUpgradePrompt() {
         console.log('Showing upgrade prompt');
         // For now, just log - we'll add UI later
-        alert('You\'ve reached your monthly limit of 3 PDFs. Upgrade to Pro for unlimited downloads starting at $9.99/month.');
+        alert('Everything is free! Create a free account to save your progress and access unlimited PDFs.');
     }
 
     getCurrentWordCount() {
@@ -805,19 +1139,22 @@ class UsageTracker {
     }
 
     showWordCountPrompt() {
-        const wordCount = this.getCurrentWordCount();
-        const overLimit = wordCount - 1000;
+        // DISABLED FOR TESTING - no word count limits
+        console.log('Word count prompt disabled for testing');
+        return;
         
-        console.log('Showing word count prompt');
-        alert(`Free plan allows PDFs up to 1000 words. Your document has ${wordCount} words (${overLimit} over the limit). Upgrade to Pro to create PDFs of any length.`);
+        // Original code (commented out for testing):
+        // const wordCount = this.getCurrentWordCount();
+        // const overLimit = wordCount - 1000;
+        // 
+        // console.log('Showing word count prompt');
+        // alert(`Free plan allows PDFs up to 1000 words. Your document has ${wordCount} words (${overLimit} over the limit). Upgrade to Pro to create PDFs of any length.`);
     }
 
     updateUsageDisplay() {
         const usage = this.getMonthlyUsage();
         const max = this.getMaxDownloads();
-        const displayText = max === -1 ? 
-            `Pro Plan: ${usage} PDFs downloaded this month` : 
-            `Free Plan: ${usage}/${max} PDFs this month`;
+        const displayText = `Free Plan: ${usage} PDFs downloaded this month`;
         
         console.log('Usage display updated:', displayText);
         
@@ -902,6 +1239,9 @@ class StyledPages {
         // Initialize authentication and usage tracking
         this.authManager = new AuthManager();
         this.usageTracker = new UsageTracker();
+        
+        // Initialize image manager for automatic image placement
+        this.imageManager = new ImageManager();
         
         this.init();
     }
@@ -1105,6 +1445,8 @@ class StyledPages {
         const showPageNumbersCheck = document.getElementById('showPageNumbers');
         const loadDemoBtn = document.getElementById('loadDemo');
         const exportPdfBtn = document.getElementById('exportPdf');
+        const pricingBtn = document.getElementById('pricingBtn');
+        const insertImagesBtn = document.getElementById('insertImagesBtn');
         const refreshBtn = document.getElementById('refreshPreview');
         const clearContentBtn = document.getElementById('clearContent');
         const inputModeRadios = document.querySelectorAll('input[name="inputMode"]');
@@ -1313,7 +1655,26 @@ class StyledPages {
             this.updatePreview();
         });
         loadDemoBtn.addEventListener('click', () => this.loadDemoContent());
-        exportPdfBtn.addEventListener('click', () => this.exportToPDF());
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', () => this.exportToPDF());
+        }
+        if (pricingBtn) {
+            pricingBtn.addEventListener('click', () => {
+                // Pricing modal disabled - everything is free
+                alert('Everything is now free! All features are available at no cost.');
+            });
+        }
+        if (insertImagesBtn) {
+            insertImagesBtn.addEventListener('click', async () => {
+                const content = document.getElementById('contentInput').value;
+                const preview = document.getElementById('pdfPreview');
+                // Process images on demand
+                const inserted = await this.imageManager.processPreviewForImages(content, preview, { demandOnly: true });
+                if (!inserted) {
+                    this.showToast('No space found to insert an image in your document.');
+                }
+            });
+        }
         refreshBtn.addEventListener('click', async () => {
             console.log('Refresh button clicked');
             this.updatePreview();
@@ -1344,6 +1705,25 @@ class StyledPages {
             });
         });
 
+        // Auto images toggle
+        const autoImagesEnabled = document.getElementById('autoImagesEnabled');
+        if (autoImagesEnabled) {
+            autoImagesEnabled.addEventListener('change', (e) => {
+                this.imageManager.toggleAutoImages(e.target.checked);
+                this.updateImageStats();
+                if (e.target.checked) {
+                    // Re-process preview with images if enabled
+                    setTimeout(() => {
+                        const content = document.getElementById('contentInput').value;
+                        const preview = document.getElementById('pdfPreview');
+                        if (content.trim() && preview) {
+                            this.imageManager.processPreviewForImages(content, preview);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
         // Scroll to top functionality
         const scrollToTopBtn = document.getElementById('scrollToTop');
         if (scrollToTopBtn) {
@@ -1352,6 +1732,64 @@ class StyledPages {
                     behavior: 'smooth',
                     block: 'start'
                 });
+            });
+        }
+
+        // Landing page button handlers
+        const getStartedBtn = document.getElementById('getStartedBtn');
+        const seeDemoBtn = document.getElementById('seeDemoBtn');
+        const ctaGetStartedBtn = document.getElementById('ctaGetStartedBtn');
+        const backToLandingBtn = document.getElementById('backToLandingBtn');
+
+        if (getStartedBtn) {
+            getStartedBtn.addEventListener('click', () => {
+                this.authManager.showAccountModal();
+            });
+        }
+
+        if (seeDemoBtn) {
+            seeDemoBtn.addEventListener('click', () => {
+                this.isDemoMode = true;
+                // Show main content
+                const mainContent = document.getElementById('mainContent');
+                const landingPage = document.getElementById('landingPage');
+                const appHeaderActions = document.getElementById('appHeaderActions');
+                const landingHeaderActions = document.getElementById('landingHeaderActions');
+                
+                if (mainContent) mainContent.style.display = 'block';
+                if (landingPage) landingPage.style.display = 'none';
+                if (appHeaderActions) appHeaderActions.style.display = 'flex';
+                if (landingHeaderActions) landingHeaderActions.style.display = 'none';
+                if (backToLandingBtn) backToLandingBtn.style.display = 'inline-block';
+                
+                // Load demo content
+                this.loadDemoContent();
+            });
+        }
+
+        if (ctaGetStartedBtn) {
+            ctaGetStartedBtn.addEventListener('click', () => {
+                this.authManager.showAccountModal();
+            });
+        }
+
+        if (backToLandingBtn) {
+            backToLandingBtn.addEventListener('click', () => {
+                this.isDemoMode = false;
+                // Hide main content, show landing page
+                const mainContent = document.getElementById('mainContent');
+                const landingPage = document.getElementById('landingPage');
+                const appHeaderActions = document.getElementById('appHeaderActions');
+                const landingHeaderActions = document.getElementById('landingHeaderActions');
+                
+                if (mainContent) mainContent.style.display = 'none';
+                if (landingPage) landingPage.style.display = 'block';
+                if (appHeaderActions) appHeaderActions.style.display = 'none';
+                if (landingHeaderActions) landingHeaderActions.style.display = 'flex';
+                if (backToLandingBtn) backToLandingBtn.style.display = 'none';
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         }
 
@@ -1430,66 +1868,348 @@ class StyledPages {
 
         // Add upgrade button functionality
         const upgradeBtn = document.getElementById('upgradeBtn');
+        const premiumUpgradeBtn = document.getElementById('premiumUpgradeBtn');
+        const pricingModal = document.getElementById('pricingModal');
+        const closePricingModal = document.getElementById('closePricingModal');
+        const flowCheckoutBtn = document.getElementById('flowCheckoutBtn');
+        const selectFreePlan = document.getElementById('selectFreePlan');
+        const billingToggle = document.getElementById('billingToggle');
+        
+        // Pricing modal functionality
         if (upgradeBtn) {
             upgradeBtn.addEventListener('click', () => {
-                console.log('Upgrade button clicked');
-                // For now, just show an alert
-                alert('Upgrade functionality coming soon! This will integrate with Gumroad.');
+                // Everything is free - no upgrade needed
+                alert('Everything is now free! All features are available at no cost.');
+            });
+        }
+        
+        if (premiumUpgradeBtn) {
+            premiumUpgradeBtn.addEventListener('click', () => {
+                // Everything is free - no upgrade needed
+                alert('Everything is now free! All features are available at no cost.');
+            });
+        }
+        
+        if (closePricingModal) {
+            closePricingModal.addEventListener('click', () => {
+                this.hidePricingModal();
+            });
+        }
+        
+        if (flowCheckoutBtn) {
+            // Gumroad handles the checkout process
+            // No custom event handler needed
+        }
+        
+        if (selectFreePlan) {
+            selectFreePlan.addEventListener('click', () => {
+                this.hidePricingModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (pricingModal) {
+            pricingModal.addEventListener('click', (e) => {
+                if (e.target === pricingModal) {
+                    this.hidePricingModal();
+                }
+            });
+        }
+
+        // Billing toggle functionality
+        if (billingToggle) {
+            billingToggle.addEventListener('change', () => {
+                this.handleBillingToggle();
+            });
+        }
+
+        // Initialize default pricing
+        this.initializeDefaultPricing();
+    }
+
+    // Pricing Modal Methods
+    showPricingModal() {
+        const pricingModal = document.getElementById('pricingModal');
+        if (pricingModal) {
+            pricingModal.style.display = 'flex';
+            pricingModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    hidePricingModal() {
+        const pricingModal = document.getElementById('pricingModal');
+        if (pricingModal) {
+            pricingModal.classList.remove('show');
+            setTimeout(() => {
+                pricingModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+    }
+
+    handlePremiumUpgrade() {
+        // Check if user has account first
+        if (!this.authManager.hasAccount()) {
+            this.showAccountPrompt();
+            return;
+        }
+        // Show pricing modal if they have account
+        this.showPricingModal();
+    }
+
+    handleFlowUpgrade() {
+        // Check if user has account first (guard against missing method)
+        const hasAccount = !!(this.authManager && typeof this.authManager.hasAccount === 'function' && this.authManager.hasAccount());
+        if (!hasAccount) {
+            this.hidePricingModal();
+            this.showAccountPrompt();
+            return;
+        }
+        
+        // User has account, proceed with Gumroad checkout
+        const billingToggle = document.getElementById('billingToggle');
+        const isAnnual = billingToggle ? billingToggle.checked : false;
+        
+        if (isAnnual) {
+            // Annual Flow - open in new tab
+            window.open('https://intellibuild.gumroad.com/l/tjenz', '_blank');
+            
+            // Show confirmation message
+            this.showCheckoutMessage('🚀 Opening Annual Flow checkout...');
+        } else {
+            // Monthly Flow - use Gumroad overlay
+            const gumroadBtn = document.createElement('a');
+            gumroadBtn.className = 'gumroad-button';
+            gumroadBtn.href = 'https://intellibuild.gumroad.com/l/styledpages';
+            gumroadBtn.setAttribute('data-gumroad-overlay-checkout', 'true');
+            gumroadBtn.style.display = 'none';
+            document.body.appendChild(gumroadBtn);
+            gumroadBtn.click();
+            document.body.removeChild(gumroadBtn);
+            
+            // Show confirmation message
+            this.showCheckoutMessage('🚀 Opening Monthly Flow checkout...');
+        }
+        
+        // Track the upgrade attempt
+        if (typeof trackEvent === 'function') {
+            trackEvent('flow_upgrade_clicked', {
+                source: 'pricing_modal',
+                billing: isAnnual ? 'annual' : 'monthly',
+                user_tier: this.usageTracker?.userTier || 'free'
             });
         }
     }
 
+    showCheckoutMessage(message) {
+        const checkoutMsg = document.createElement('div');
+        checkoutMsg.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            z-index: 10000;
+            font-weight: 600;
+            animation: slideIn 0.3s ease-out;
+        `;
+        checkoutMsg.textContent = message;
+        document.body.appendChild(checkoutMsg);
+        
+        // Remove message after 3 seconds
+        setTimeout(() => {
+            if (checkoutMsg.parentNode) {
+                checkoutMsg.parentNode.removeChild(checkoutMsg);
+            }
+        }, 3000);
+    }
+
+    showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30,41,59,0.95);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            font-weight: 600;
+            animation: slideIn 0.25s ease-out;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 3000);
+    }
+
+    handleBillingToggle() {
+        const billingToggle = document.getElementById('billingToggle');
+        const flowPrice = document.getElementById('flowPrice');
+        const flowPeriod = document.getElementById('flowPeriod');
+        const flowCheckoutBtn = document.getElementById('flowCheckoutBtn');
+        const billingNote = document.getElementById('billingNote');
+        
+        if (billingToggle && flowPrice && flowPeriod && flowCheckoutBtn) {
+            if (billingToggle.checked) {
+                // Annual selected (default): show monthly equivalent $7.50/month
+                flowPrice.textContent = '7.50';
+                flowPeriod.textContent = '/month';
+                flowCheckoutBtn.innerHTML = '<span class="btn-icon">💎</span>Get Annual Flow';
+                flowCheckoutBtn.href = 'https://intellibuild.gumroad.com/l/tjenz';
+                if (billingNote) billingNote.textContent = 'Billed annually $90';
+            } else {
+                // Monthly pricing
+                flowPrice.textContent = '9';
+                flowPeriod.textContent = '/month';
+                flowCheckoutBtn.innerHTML = '<span class="btn-icon">💎</span>Get Monthly Flow';
+                flowCheckoutBtn.href = 'https://intellibuild.gumroad.com/l/styledpages';
+                if (billingNote) billingNote.textContent = 'Billed monthly';
+            }
+        }
+    }
+
+    // Initialize default annual pricing on page load
+    initializeDefaultPricing() {
+        this.handleBillingToggle();
+    }
+
+    startAnnualCheckout() {
+        // Check if user has account first
+        if (!this.authManager.hasAccount()) {
+            this.hidePricingModal();
+            this.showAccountPrompt();
+            return;
+        }
+        
+        // Start annual Flow checkout
+        window.open('https://intellibuild.gumroad.com/l/tjenz', '_blank');
+        
+        // Track the upgrade attempt
+        if (typeof trackEvent === 'function') {
+            trackEvent('flow_upgrade_clicked', {
+                source: 'billing_toggle',
+                billing: 'annual',
+                user_tier: this.usageTracker?.userTier || 'free'
+            });
+        }
+        
+        // Show confirmation message
+        const checkoutMsg = document.createElement('div');
+        checkoutMsg.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            z-index: 10000;
+            font-weight: 600;
+            animation: slideIn 0.3s ease-out;
+        `;
+        checkoutMsg.textContent = '🚀 Opening Annual Flow checkout...';
+        document.body.appendChild(checkoutMsg);
+        
+        // Remove message after 3 seconds
+        setTimeout(() => {
+            if (checkoutMsg.parentNode) {
+                checkoutMsg.parentNode.removeChild(checkoutMsg);
+            }
+        }, 3000);
+    }
+
+    showUpgradePrompt() {
+        const upgradePrompt = document.getElementById('upgradePrompt');
+        if (upgradePrompt) {
+            upgradePrompt.style.display = 'block';
+        }
+    }
+
+    hideUpgradePrompt() {
+        const upgradePrompt = document.getElementById('upgradePrompt');
+        if (upgradePrompt) {
+            upgradePrompt.style.display = 'none';
+        }
+    }
+
     async loadDemoContent() {
-        const demoContent = `# Enterprise Document Automation Platform
+        const demoContent = `# The 7 Biblical Laws of Wealth & Productivity
 
-## Streamline Your Business Documentation Workflow
+*A Faith-Driven Blueprint for Building Prosperity and Purpose with God at the Center*
 
-In today's competitive business environment, organizations require efficient, professional document generation capabilities that scale with enterprise needs. **StyledPages** delivers enterprise-grade document automation, transforming unstructured content into publication-ready materials with enterprise-level reliability and security.
+Is it wrong to want more? Many Christians struggle with this question, fearing that desiring wealth contradicts their faith. But what if I told you that God actually wants you to prosper—not just spiritually, but in every area of your life?
 
-### Enterprise Features
+God cares about how you use your time, your money, and your energy. He's given us clear principles in His Word for building wealth and productivity that honors Him. These aren't "get rich quick" schemes or worldly strategies—they're timeless biblical laws that have guided successful believers for centuries.
 
-- **Advanced Content Intelligence**: AI-powered structure detection and formatting optimization
-- **Corporate Brand Management**: Centralized control over fonts, colors, and styling standards
-- **Multi-Format Export**: Generate PDFs, Word documents, and web-ready formats
-- **Enterprise Security**: SOC 2 compliant with role-based access controls
+In *The 7 Biblical Laws of Wealth & Productivity*, you'll discover how to apply these ancient principles to your modern life. From the stewardship principles that made Abraham wealthy to the wisdom strategies that built Solomon's kingdom, these laws are as relevant today as they were thousands of years ago.
 
-## Technical Architecture
+## Why Wisdom Multiplies Wealth and Productivity
 
-Our enterprise platform is built on a robust, scalable infrastructure designed for high-volume document processing:
+> "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding." – Proverbs 9:10
 
-1. **Content Analysis Engine**: Proprietary algorithms that understand document hierarchy and context
-2. **Template Management System**: Centralized repository for corporate templates and brand guidelines
-3. **Quality Assurance Framework**: Automated validation ensuring consistent output quality
-4. **Integration Capabilities**: RESTful APIs and webhook support for seamless system integration
+Making God-Centered Decisions That Multiply Success
 
-### Target Enterprise Use Cases
+True wealth isn't just about money—it's about wisdom guided by God's truth. While knowledge tells you *what* to do, wisdom tells you *how* to do it, *when* to act, and *what* to prioritize. The Law of Wisdom ensures that your productivity, wealth, and actions are not only efficient but aligned with God's will.
 
-- **Financial Services**: Regulatory reports, client presentations, and compliance documentation
-- **Legal Firms**: Case briefs, contract templates, and court filing preparation
-- **Consulting Organizations**: Client deliverables, proposal generation, and knowledge management
-- **Healthcare Systems**: Patient reports, policy documentation, and regulatory submissions
+Wise choices reduce wasted time, money, and effort. They help you avoid the pitfalls that trap so many people in cycles of financial struggle and unproductive busyness. When you operate from biblical wisdom, every decision becomes an investment in your future success.
 
-## Business Impact Analysis
+1. **Informed Decisions Prevent Loss**
+2. **Acting without wisdom often leads to frustration, setbacks, or spiritual misalignment**
 
-### Operational Efficiency Gains
-Organizations report 75% reduction in document preparation time, enabling teams to focus on high-value activities rather than formatting tasks.
+## The 7 Laws That Transform Everything
 
-### Cost Optimization
-Eliminate the need for dedicated design resources while maintaining professional output standards across all business units.
+### Law 1: The Law of Stewardship
+*"The earth is the Lord's, and everything in it, the world, and all who live in it."* – Psalm 24:1
 
-### Compliance and Consistency
-Ensure all corporate communications meet brand guidelines and regulatory requirements through automated validation and approval workflows.
+Everything you have belongs to God. When you understand this truth, you stop hoarding and start investing. Stewardship isn't about having less—it's about managing more for God's glory.
 
-### Scalability and Performance
-Handle enterprise-scale document volumes with 99.9% uptime guarantee and sub-second processing times for standard document types.
+### Law 2: The Law of Diligence
+*"Lazy hands make for poverty, but diligent hands bring wealth."* – Proverbs 10:4
 
-## Implementation Roadmap
+God rewards hard work, but not just any work. Diligent work is strategic, purposeful, and done with excellence. It's the difference between being busy and being productive.
 
-Contact our enterprise solutions team to discuss your organization's specific requirements and develop a customized implementation plan.
+### Law 3: The Law of Integrity
+*"The Lord detests dishonest scales, but accurate weights find favor with him."* – Proverbs 11:1
 
-*Transform your document workflow with enterprise-grade automation. Schedule a consultation today.*`;
+Your reputation is your most valuable asset. When people trust you, they want to do business with you. Integrity isn't just the right thing to do—it's the profitable thing to do.
+
+### Law 4: The Law of Generosity
+*"One person gives freely, yet gains even more; another withholds unduly, but comes to poverty."* – Proverbs 11:24
+
+Generosity isn't just about giving money—it's about giving value. When you focus on serving others, God ensures you're taken care of. It's the divine principle of multiplication.
+
+### Law 5: The Law of Planning
+*"The plans of the diligent lead to profit as surely as haste leads to poverty."* – Proverbs 21:5
+
+Success doesn't happen by accident. It happens by design. When you plan with God's wisdom, you position yourself for His blessings and favor.
+
+### Law 6: The Law of Persistence
+*"Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up."* – Galatians 6:9
+
+Every successful person has faced setbacks. The difference is they didn't quit. They kept moving forward, trusting God's timing and His promises.
+
+### Law 7: The Law of Faith
+*"And without faith it is impossible to please God, because anyone who comes to him must believe that he exists and that he rewards those who earnestly seek him."* – Hebrews 11:6
+
+Faith is the foundation of everything. When you believe God wants to bless you and you act on that belief, miracles happen. Your faith becomes the bridge between where you are and where God wants you to be.
+
+## Your Next Step
+
+These laws aren't just principles—they're promises. When you apply them consistently, you'll see transformation in every area of your life. But knowledge without action is just information. The question is: Are you ready to put these laws into practice?
+
+*Start your journey to biblical wealth and productivity today. Your future self will thank you.*`;
 
         document.getElementById('contentInput').value = demoContent;
+        this.lastLoadedWasDemo = true;
         await this.updatePreview();
     }
 
@@ -1504,68 +2224,101 @@ Contact our enterprise solutions team to discuss your organization's specific re
         console.log('Is content formatted:', this.isContentFormatted());
         console.log('Preview element:', preview);
         
+        // Add visual debug indicator
+        if (preview) {
+            preview.style.border = '2px solid #3b82f6';
+            preview.style.backgroundColor = '#f8fafc';
+        }
+        
         // Add visual feedback that preview is updating
-        preview.style.opacity = '0.7';
-        preview.style.transform = 'scale(0.98)';
+        if (preview) {
+            preview.style.opacity = '0.7';
+            preview.style.transform = 'scale(0.98)';
+        }
         
         if (!content.trim()) {
-            preview.innerHTML = '<div class="preview-placeholder"><p>Enter content above to see the live preview</p></div>';
-            preview.style.opacity = '1';
-            preview.style.transform = 'scale(1)';
+            if (preview) {
+                preview.innerHTML = '<div class="preview-placeholder"><p>Enter content above to see the live preview</p></div>';
+                preview.style.opacity = '1';
+                preview.style.transform = 'scale(1)';
+            }
             return;
         }
 
         let formattedContent;
         
-        // Always use markdown parsing (plain text mode disabled)
+        try {
+            // Always use markdown parsing (plain text mode disabled)
             console.log('Using markdown parsing...');
             formattedContent = this.parseContentWithPageBreaks(content);
-        
-        console.log('Formatted content:', formattedContent);
-        
-        // Fallback if parsing fails
-        if (!formattedContent || formattedContent.trim() === '') {
-            console.log('Using fallback parsing...');
-            formattedContent = this.parseContent(content);
+            
+            console.log('Formatted content:', formattedContent);
+            
+            // Fallback if parsing fails
+            if (!formattedContent || formattedContent.trim() === '') {
+                console.log('Using fallback parsing...');
+                formattedContent = this.parseContent(content);
+            }
+            
+            if (preview) {
+                preview.innerHTML = formattedContent;
+                
+                // Apply CSS class and formatting variables AFTER content is inserted
+                preview.className = `pdf-preview theme-${this.currentTheme} page-size-${this.pageSize}`;
+                
+                // Apply all formatting variables
+                preview.style.setProperty('--title-font', this.titleFont);
+                preview.style.setProperty('--header-font', this.headerFont);
+                preview.style.setProperty('--body-font', this.bodyFont);
+                preview.style.setProperty('--title-color', this.titleColor);
+                preview.style.setProperty('--header-color', this.headerColor);
+                preview.style.setProperty('--body-color', this.bodyColor);
+                preview.style.setProperty('--accent-color', this.accentColor);
+                preview.style.setProperty('--title-size', this.titleSize + 'px');
+                preview.style.setProperty('--header-size', this.headerSize + 'px');
+                preview.style.setProperty('--body-size', this.bodySize + 'px');
+                preview.style.setProperty('--margin-top', this.marginTop + 'in');
+                preview.style.setProperty('--margin-bottom', this.marginBottom + 'in');
+                preview.style.setProperty('--margin-left', this.marginLeft + 'in');
+                preview.style.setProperty('--margin-right', this.marginRight + 'in');
+                console.log('Setting margins to:', { top: this.marginTop, bottom: this.marginBottom, left: this.marginLeft, right: this.marginRight });
+                
+                // Apply text alignment
+                preview.style.setProperty('--text-alignment', this.textAlignment);
+                preview.style.setProperty('--title-alignment', this.titleAlignment);
+                preview.style.setProperty('--header-alignment', this.headerAlignment);
+                preview.style.setProperty('--body-alignment', this.bodyAlignment);
+                console.log('Setting text alignment:', { text: this.textAlignment, title: this.titleAlignment, header: this.headerAlignment, body: this.bodyAlignment });
+                preview.style.setProperty('--line-spacing', this.lineSpacing);
+                
+                // Apply page size dimensions
+                const pageDimensions = this.getPageDimensions();
+                preview.style.setProperty('--page-width', pageDimensions.width);
+                preview.style.setProperty('--page-height', pageDimensions.height);
+                console.log('Setting page dimensions:', pageDimensions);
+            } else {
+                console.error('Preview element not found!');
+                return;
+            }
+        } catch (error) {
+            console.error('Error in updatePreview:', error);
+            if (preview) {
+                preview.innerHTML = '<div class="preview-placeholder"><p>Error updating preview: ' + error.message + '</p></div>';
+            }
+            return;
         }
-        
-        preview.innerHTML = formattedContent;
-        preview.className = `pdf-preview theme-${this.currentTheme} page-size-${this.pageSize}`;
-        
-        // Apply all formatting variables
-        preview.style.setProperty('--title-font', this.titleFont);
-        preview.style.setProperty('--header-font', this.headerFont);
-        preview.style.setProperty('--body-font', this.bodyFont);
-        preview.style.setProperty('--title-color', this.titleColor);
-        preview.style.setProperty('--header-color', this.headerColor);
-        preview.style.setProperty('--body-color', this.bodyColor);
-        preview.style.setProperty('--accent-color', this.accentColor);
-        preview.style.setProperty('--title-size', this.titleSize + 'px');
-        preview.style.setProperty('--header-size', this.headerSize + 'px');
-        preview.style.setProperty('--body-size', this.bodySize + 'px');
-        preview.style.setProperty('--margin-top', this.marginTop + 'in');
-        preview.style.setProperty('--margin-bottom', this.marginBottom + 'in');
-        preview.style.setProperty('--margin-left', this.marginLeft + 'in');
-        preview.style.setProperty('--margin-right', this.marginRight + 'in');
-        console.log('Setting margins to:', { top: this.marginTop, bottom: this.marginBottom, left: this.marginLeft, right: this.marginRight });
-        
-        // Apply text alignment
-        preview.style.setProperty('--text-alignment', this.textAlignment);
-        preview.style.setProperty('--title-alignment', this.titleAlignment);
-        preview.style.setProperty('--header-alignment', this.headerAlignment);
-        preview.style.setProperty('--body-alignment', this.bodyAlignment);
-        console.log('Setting text alignment:', { text: this.textAlignment, title: this.titleAlignment, header: this.headerAlignment, body: this.bodyAlignment });
-        preview.style.setProperty('--line-spacing', this.lineSpacing);
-        
-        // Apply page size dimensions
-        const pageDimensions = this.getPageDimensions();
-        preview.style.setProperty('--page-width', pageDimensions.width);
-        preview.style.setProperty('--page-height', pageDimensions.height);
-        console.log('Setting page dimensions:', pageDimensions);
         
         // Create draggable margin lines
         this.createDraggableMarginLines();
         
+        // Process images: auto for all content when enabled
+        setTimeout(async () => {
+            const isDemo = !!(this.lastLoadedWasDemo);
+            const options = isDemo ? { ensureAtLeastOne: true } : { auto: true };
+            await this.imageManager.processPreviewForImages(content, preview, options);
+            this.updateImageStats();
+        }, 200);
+
         // Restore full opacity and scale
         setTimeout(() => {
             preview.style.opacity = '1';
@@ -1578,6 +2331,9 @@ Contact our enterprise solutions team to discuss your organization's specific re
         const lines = content.split('\n');
         let html = '';
         let inList = false;
+        let lineCount = 0;
+        let firstH2Found = false;
+        const maxLinesPerPage = 50; // Approximate lines per page (increased from 30)
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -1596,8 +2352,40 @@ Contact our enterprise solutions team to discuss your organization's specific re
                     html += '</ul>';
                     inList = false;
                 }
+                
+                // Add page break before H2 headers if:
+                // 1. User has enabled it AND it's not the first H2 AND there's enough content to follow, OR
+                // 2. Content would overflow to next page (regardless of user preference)
+                let shouldAddPageBreak = false;
+                
+                if (lineCount > maxLinesPerPage - 2) {
+                    // Content would overflow, always add page break
+                    shouldAddPageBreak = true;
+                } else if (html.length > 0 && this.subsectionPageBreak && firstH2Found) {
+                    // Check if there's enough content after this header to justify a page break
+                    let contentAfterHeader = 0;
+                    for (let j = i + 1; j < lines.length; j++) {
+                        const nextLine = lines[j].trim();
+                        if (nextLine.length > 0 && !nextLine.startsWith('#')) {
+                            contentAfterHeader++;
+                        }
+                        if (contentAfterHeader >= 3) break; // Need at least 3 lines of content
+                    }
+                    
+                    shouldAddPageBreak = contentAfterHeader >= 3;
+                }
+                
+                if (shouldAddPageBreak) {
+                    html += '<div class="page-break subsection-break"></div>';
+                    lineCount = 0;
+                }
+                
+                // Mark that we've found the first H2
+                firstH2Found = true;
+                
                 const headerText = this.processInlineFormatting(line.substring(3));
                 html += `<h2>${headerText}</h2>`;
+                lineCount += 2; // H2 takes 2 lines
             } else if (line.startsWith('### ')) {
                 // Small header
                 if (inList) {
@@ -1606,6 +2394,7 @@ Contact our enterprise solutions team to discuss your organization's specific re
                 }
                 const headerText = this.processInlineFormatting(line.substring(4));
                 html += `<h3>${headerText}</h3>`;
+                lineCount += 2; // H3 takes 2 lines
             } else if (line.startsWith('- ')) {
                 // List item
                 if (!inList) {
@@ -1614,6 +2403,7 @@ Contact our enterprise solutions team to discuss your organization's specific re
                 }
                 const listText = this.processInlineFormatting(line.substring(2));
                 html += `<li>${listText}</li>`;
+                lineCount += 1; // List item takes 1 line
             } else if (line.length > 0) {
                 // Regular paragraph
                 if (inList) {
@@ -1622,6 +2412,7 @@ Contact our enterprise solutions team to discuss your organization's specific re
                 }
                 const paragraphText = this.processInlineFormatting(line);
                 html += `<p>${paragraphText}</p>`;
+                lineCount += 1; // Paragraph takes 1 line
             } else {
                 // Empty line
                 if (inList) {
@@ -1656,7 +2447,7 @@ Contact our enterprise solutions team to discuss your organization's specific re
         let lastWasHeader = false;
         let lineCount = 0;
         let firstH2Found = false; // Track if we've seen the first H2
-        const maxLinesPerPage = 30; // Approximate lines per page
+        const maxLinesPerPage = 50; // Approximate lines per page (increased from 30)
         
         // Add initial page break to ensure content starts on a new page
         html += '<div class="page-break initial-page"></div>';
@@ -1671,10 +2462,22 @@ Contact our enterprise solutions team to discuss your organization's specific re
                     inList = false;
                 }
                 
-                // Add page break before H1 headers if user has enabled it
+                // Add page break before H1 headers if user has enabled it AND there's enough content to follow
                 if (html.length > 0 && this.sectionPageBreak) {
-                    html += '<div class="page-break section-break"></div>';
-                    lineCount = 0;
+                    // Check if there's enough content after this header to justify a page break
+                    let contentAfterHeader = 0;
+                    for (let j = i + 1; j < lines.length; j++) {
+                        const nextLine = lines[j].trim();
+                        if (nextLine.length > 0 && !nextLine.startsWith('#')) {
+                            contentAfterHeader++;
+                        }
+                        if (contentAfterHeader >= 3) break; // Need at least 3 lines of content
+                    }
+                    
+                    if (contentAfterHeader >= 3) {
+                        html += '<div class="page-break section-break"></div>';
+                        lineCount = 0;
+                    }
                 }
                 
                 const headerText = this.processInlineFormatting(line.substring(2));
@@ -1689,10 +2492,26 @@ Contact our enterprise solutions team to discuss your organization's specific re
                 }
                 
                 // Add page break before H2 headers if:
-                // 1. User has enabled it AND it's not the first H2, OR
+                // 1. User has enabled it AND it's not the first H2 AND there's enough content to follow, OR
                 // 2. Content would overflow to next page (regardless of user preference)
-                const shouldAddPageBreak = (html.length > 0 && this.subsectionPageBreak && firstH2Found) || 
-                                         (lineCount > maxLinesPerPage - 2); // H2 takes 2 lines, so check if adding it would overflow
+                let shouldAddPageBreak = false;
+                
+                if (lineCount > maxLinesPerPage - 2) {
+                    // Content would overflow, always add page break
+                    shouldAddPageBreak = true;
+                } else if (html.length > 0 && this.subsectionPageBreak && firstH2Found) {
+                    // Check if there's enough content after this header to justify a page break
+                    let contentAfterHeader = 0;
+                    for (let j = i + 1; j < lines.length; j++) {
+                        const nextLine = lines[j].trim();
+                        if (nextLine.length > 0 && !nextLine.startsWith('#')) {
+                            contentAfterHeader++;
+                        }
+                        if (contentAfterHeader >= 3) break; // Need at least 3 lines of content
+                    }
+                    
+                    shouldAddPageBreak = contentAfterHeader >= 3;
+                }
                 
                 if (shouldAddPageBreak) {
                     html += '<div class="page-break subsection-break"></div>';
@@ -1844,6 +2663,10 @@ Contact our enterprise solutions team to discuss your organization's specific re
 
     async exportToPDF() {
         const exportBtn = document.getElementById('exportPdf');
+        if (!exportBtn) {
+            console.error('Export button not found');
+            return;
+        }
         const originalText = exportBtn.textContent;
         
         // Track PDF export attempt
@@ -1910,11 +2733,17 @@ Contact our enterprise solutions team to discuss your organization's specific re
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>StyledPages Document</title>
+    <title>Document</title>
     <style>
         @page {
             size: ${this.getPageSizeForPrint(pageSize)};
             margin: ${marginTop}in ${marginRight}in ${marginBottom}in ${marginLeft}in;
+            @top-left { content: ""; }
+            @top-center { content: ""; }
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-center { content: ""; }
+            @bottom-right { content: ""; }
         }
         
         body {
@@ -2011,10 +2840,69 @@ Contact our enterprise solutions team to discuss your organization's specific re
             page-break-before: always;
         }
         
+        /* Style for auto-placed images in PDF */
+        .auto-placed-image {
+            margin: 20px 0;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        
+        .auto-placed-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 100%;
+        }
+        
+        /* Hide image captions and watermarks in PDF */
+        .image-caption {
+            display: none !important;
+        }
+        
+        .auto-placed-image .image-caption {
+            display: none !important;
+        }
+        
         @media print {
             body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            
+            /* Hide browser print headers and footers */
+            @page {
+                margin: ${marginTop}in ${marginRight}in ${marginBottom}in ${marginLeft}in !important;
+                @top-left { content: "" !important; }
+                @top-center { content: "" !important; }
+                @top-right { content: "" !important; }
+                @bottom-left { content: "" !important; }
+                @bottom-center { content: "" !important; }
+                @bottom-right { content: "" !important; }
+            }
+            
+            /* Style for auto-placed images in print/PDF */
+            .auto-placed-image {
+                margin: 20px 0;
+                text-align: center;
+                page-break-inside: avoid;
+            }
+            
+            .auto-placed-image img {
+                width: 100%;
+                height: auto;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                max-width: 100%;
+            }
+            
+            /* Ensure image captions are hidden in print/PDF */
+            .image-caption {
+                display: none !important;
+            }
+            
+            .auto-placed-image .image-caption {
+                display: none !important;
             }
         }
     </style>
@@ -2046,10 +2934,10 @@ Contact our enterprise solutions team to discuss your organization's specific re
                         </style>
                     `;
                     
-                    // Add a script that tries to auto-select PDF destination
+                    // Add a script that tries to auto-select PDF destination and disable headers/footers
                     const autoSelectScript = `
                         <script>
-                            // Function to try to auto-select "Save as PDF"
+                            // Function to try to auto-select "Save as PDF" and disable headers/footers
                             function tryAutoSelectPDF() {
                                 // Wait for print dialog to be ready
                                 setTimeout(() => {
@@ -2068,6 +2956,28 @@ Contact our enterprise solutions team to discuss your organization's specific re
                                                         destinationSelect.dispatchEvent(new Event('change', { bubbles: true }));
                                                         break;
                                                     }
+                                                }
+                                            }
+                                            
+                                            // Try to disable headers and footers
+                                            const moreSettings = printPreview.querySelector('print-preview-sidebar');
+                                            if (moreSettings) {
+                                                const optionsButton = moreSettings.querySelector('print-preview-button-strip cr-button[aria-label*="More settings"], print-preview-button-strip cr-button[aria-label*="Options"]');
+                                                if (optionsButton) {
+                                                    optionsButton.click();
+                                                    
+                                                    setTimeout(() => {
+                                                        // Look for headers/footers toggle
+                                                        const headersToggle = moreSettings.querySelector('print-preview-checkbox[setting-id="headers"]');
+                                                        const footersToggle = moreSettings.querySelector('print-preview-checkbox[setting-id="footers"]');
+                                                        
+                                                        if (headersToggle && headersToggle.checked) {
+                                                            headersToggle.click();
+                                                        }
+                                                        if (footersToggle && footersToggle.checked) {
+                                                            footersToggle.click();
+                                                        }
+                                                    }, 100);
                                                 }
                                             }
                                         }
@@ -2090,23 +3000,23 @@ Contact our enterprise solutions team to discuss your organization's specific re
                     // Trigger print
                     printWindow.print();
                     printWindow.close();
-            
-            // Show success state
+                    
+                    // Show success state
                     exportBtn.innerHTML = '✓ PDF Downloaded!';
-            exportBtn.classList.add('success');
-            
-            // Track successful PDF export
-            trackEvent('pdf_export_success', {
-                theme: this.currentTheme,
-                pageSize: this.pageSize,
-                contentLength: document.getElementById('contentInput').value.length
-            });
-            
-            setTimeout(() => {
-                exportBtn.textContent = originalText;
-                exportBtn.classList.remove('success');
-                exportBtn.disabled = false;
-            }, 2000);
+                    exportBtn.classList.add('success');
+                    
+                    // Track successful PDF export
+                    trackEvent('pdf_export_success', {
+                        theme: this.currentTheme,
+                        pageSize: this.pageSize,
+                        contentLength: document.getElementById('contentInput').value.length
+                    });
+                    
+                    setTimeout(() => {
+                        exportBtn.textContent = originalText;
+                        exportBtn.classList.remove('success');
+                        exportBtn.disabled = false;
+                    }, 2000);
                 }, 500);
             };
             
@@ -2335,17 +3245,51 @@ Return only the formatted markdown:`;
         charCountEl.textContent = `${charCount.toLocaleString()} characters`;
         wordCountEl.textContent = `${wordCount.toLocaleString()} words`;
         
-        // Show word limit indicator for free users (max 1000 words)
-        if (wordLimitEl) {
-            const isFreeUser = this.usageTracker.userTier === 'free' || this.usageTracker.userTier === 'anonymous_free';
-            
-            if (isFreeUser && wordCount > 1000) {
-                wordLimitEl.style.display = 'inline-block';
-                wordLimitEl.textContent = `${wordCount - 1000} words over free limit (1000 max)`;
-            } else {
-                wordLimitEl.style.display = 'none';
-            }
+        // Show word limit indicator for free users (max 1000 words) - DISABLED FOR TESTING
+        // if (wordLimitEl) {
+        //     const isFreeUser = this.usageTracker.userTier === 'free' || this.usageTracker.userTier === 'anonymous_free';
+        //     
+        //     if (isFreeUser && wordCount > 1000) {
+        //         wordLimitEl.style.display = 'inline-block';
+        //         wordLimitEl.textContent = `${wordCount - 1000} words over free limit (1000 max)`;
+        //     } else {
+        //         wordLimitEl.style.display = 'none';
+        //     }
+        // }
+    }
+
+    updateImageStats() {
+        const imageStats = document.getElementById('imageStats');
+        if (imageStats) {
+            const currentCount = this.imageManager.currentImages.size;
+            const maxCount = this.imageManager.maxImagesPerPage;
+            imageStats.textContent = `Images: ${currentCount}/${maxCount}`;
         }
+    }
+
+    updateInputStats() {
+        const content = document.getElementById('contentInput').value;
+        const charCount = content.length;
+        const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+        
+        const charCountEl = document.getElementById('charCount');
+        const wordCountEl = document.getElementById('wordCount');
+        const wordLimitEl = document.getElementById('wordLimit');
+        
+        if (charCountEl) charCountEl.textContent = `${charCount.toLocaleString()} characters`;
+        if (wordCountEl) wordCountEl.textContent = `${wordCount.toLocaleString()} words`;
+        
+        // Show word limit indicator for free users (max 1000 words) - DISABLED FOR TESTING
+        // if (wordLimitEl) {
+        //     const isFreeUser = this.usageTracker.userTier === 'free' || this.usageTracker.userTier === 'anonymous_free';
+        //     
+        //     if (isFreeUser && wordCount > 1000) {
+        //         wordLimitEl.style.display = 'inline-block';
+        //         wordLimitEl.textContent = `${wordCount - 1000} words over free limit (1000 max)`;
+        //     } else {
+        //         wordLimitEl.style.display = 'none';
+        //     }
+        // }
         
         // Update progress bar based on content length
         this.updateProgressBar(charCount);
@@ -2453,7 +3397,7 @@ This is how your content will look when transformed into a beautiful PDF.`;
         let listType = 'ul';
         let titleFound = false; // Track if we've found the main title
         let lineCount = 0;
-        const maxLinesPerPage = 30; // Approximate lines per page
+        const maxLinesPerPage = 50; // Approximate lines per page (increased from 30)
         
         console.log('Parsing plain text with', lines.length, 'lines');
         console.log('Content:', content);
@@ -2846,4 +3790,203 @@ document.addEventListener('DOMContentLoaded', () => {
     featureCards.forEach(card => {
         observer.observe(card);
     });
+
+    // Demo Modal functionality
+    const demoModal = document.getElementById('demoModal');
+    const viewExampleBtn = document.getElementById('viewExampleBtn');
+    const closeDemoBtn = document.getElementById('closeDemoBtn');
+    const demoBtns = document.querySelectorAll('.demo-btn');
+    const demoSteps = document.querySelectorAll('.demo-step');
+
+    // Open demo modal
+    if (viewExampleBtn) {
+        viewExampleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            demoModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            
+            // Auto-advance through steps
+            let currentStep = 1;
+            const autoAdvance = setInterval(() => {
+                if (currentStep < 4) {
+                    currentStep++;
+                    switchToStep(currentStep);
+                } else {
+                    clearInterval(autoAdvance);
+                }
+            }, 3000);
+        });
+    }
+
+    // Close demo modal
+    if (closeDemoBtn) {
+        closeDemoBtn.addEventListener('click', function() {
+            demoModal.classList.remove('show');
+            document.body.style.overflow = '';
+            resetDemo();
+        });
+    }
+
+    // Close on overlay click
+    if (demoModal) {
+        demoModal.addEventListener('click', function(e) {
+            if (e.target === demoModal || e.target.classList.contains('demo-modal-overlay')) {
+                demoModal.classList.remove('show');
+                document.body.style.overflow = '';
+                resetDemo();
+            }
+        });
+    }
+
+    // Demo step navigation
+    demoBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const step = parseInt(this.dataset.step);
+            switchToStep(step);
+        });
+    });
+
+    function switchToStep(step) {
+        // Update buttons
+        demoBtns.forEach(btn => {
+            btn.classList.remove('active');
+            if (parseInt(btn.dataset.step) === step) {
+                btn.classList.add('active');
+            }
+        });
+
+        // Update steps
+        demoSteps.forEach(stepEl => {
+            stepEl.classList.remove('active');
+            if (parseInt(stepEl.dataset.step) === step) {
+                stepEl.classList.add('active');
+            }
+        });
+    }
+
+    function resetDemo() {
+        switchToStep(1);
+    }
+
+    // Auto-advance processing step
+    function startProcessingAnimation() {
+        const processingItems = document.querySelectorAll('.processing-item');
+        processingItems.forEach((item, index) => {
+            setTimeout(() => {
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 500);
+        });
+    }
+
+    // Start processing animation when step 2 becomes active
+    const processingStep = document.querySelector('[data-step="2"]');
+    if (processingStep) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    if (processingStep.classList.contains('active')) {
+                        startProcessingAnimation();
+                    }
+                }
+            });
+        });
+        observer.observe(processingStep, { attributes: true });
+    }
+
+    // Demo styling controls
+    const themeOptions = document.querySelectorAll('.theme-option');
+    const colorInputs = document.querySelectorAll('.color-input');
+    const fontSelect = document.getElementById('fontFamily');
+    const previewDocument = document.getElementById('previewDocument');
+
+    // Theme selection
+    themeOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            themeOptions.forEach(opt => opt.classList.remove('active'));
+            this.classList.add('active');
+            
+            const theme = this.dataset.theme;
+            applyTheme(theme);
+        });
+    });
+
+    // Color customization
+    colorInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const color = this.value;
+            const preview = this.nextElementSibling;
+            preview.style.background = color;
+            updatePreviewColors();
+        });
+    });
+
+    // Font selection
+    if (fontSelect) {
+        fontSelect.addEventListener('change', function() {
+            const font = this.value;
+            previewDocument.style.fontFamily = font;
+        });
+    }
+
+    function applyTheme(theme) {
+        const themes = {
+            professional: {
+                primary: '#1e40af',
+                secondary: '#3b82f6',
+                accent: '#8b5cf6'
+            },
+            creative: {
+                primary: '#8b5cf6',
+                secondary: '#ec4899',
+                accent: '#f59e0b'
+            },
+            minimal: {
+                primary: '#374151',
+                secondary: '#6b7280',
+                accent: '#9ca3af'
+            },
+            corporate: {
+                primary: '#059669',
+                secondary: '#10b981',
+                accent: '#3b82f6'
+            }
+        };
+
+        const selectedTheme = themes[theme];
+        if (selectedTheme) {
+            document.getElementById('primaryColor').value = selectedTheme.primary;
+            document.getElementById('secondaryColor').value = selectedTheme.secondary;
+            document.getElementById('accentColor').value = selectedTheme.accent;
+            
+            // Update color previews
+            document.querySelectorAll('.color-preview')[0].style.background = selectedTheme.primary;
+            document.querySelectorAll('.color-preview')[1].style.background = selectedTheme.secondary;
+            document.querySelectorAll('.color-preview')[2].style.background = selectedTheme.accent;
+            
+            updatePreviewColors();
+        }
+    }
+
+    function updatePreviewColors() {
+        const primaryColor = document.getElementById('primaryColor').value;
+        const secondaryColor = document.getElementById('secondaryColor').value;
+        const accentColor = document.getElementById('accentColor').value;
+
+        // Update preview document colors
+        const h1 = previewDocument.querySelector('h1');
+        const h2 = previewDocument.querySelector('h2');
+        const h3 = previewDocument.querySelector('h3');
+        const strong = previewDocument.querySelectorAll('strong');
+        const underline = previewDocument.querySelector('.preview-underline');
+
+        if (h1) h1.style.color = primaryColor;
+        if (h2) h2.style.color = primaryColor;
+        if (h3) h3.style.color = primaryColor;
+        if (underline) underline.style.background = `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`;
+        
+        strong.forEach(el => {
+            el.style.color = primaryColor;
+        });
+    }
 });

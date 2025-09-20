@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Preview Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        #contentInput { width: 100%; height: 200px; margin: 20px 0; }
+        #pdfPreview { 
+            border: 2px solid #3b82f6; 
+            padding: 20px; 
+            min-height: 300px; 
+            background: #f8fafc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comprehensive Preview Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Basic HTML Elements</h2>
+        <div id="test1Output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Content Input and Preview Elements</h2>
+        <div id="test2Output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Main Script Loading</h2>
+        <div id="test3Output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Preview Functionality</h2>
+        <textarea id="contentInput"># Test Document
+
+This is a test document.
+
+## Section 1
+
+- Item 1
+- Item 2
+
+**Bold text** and *italic text*</textarea>
+        
+        <div id="pdfPreview">
+            <p>Preview will appear here...</p>
+        </div>
+        
+        <button onclick="testPreview()">Test Preview</button>
+        <div id="test4Output"></div>
+    </div>
+
+    <script>
+        function log(testId, message, type = 'info') {
+            const output = document.getElementById(testId + 'Output');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            output.innerHTML += '<div class="' + className + '">' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+            console.log('[' + testId + ']', message);
+        }
+        
+        // Test 1: Basic HTML Elements
+        function test1() {
+            log('test1', 'Testing basic HTML elements...');
+            
+            try {
+                // Test if basic elements exist
+                const body = document.body;
+                const head = document.head;
+                
+                if (body && head) {
+                    log('test1', 'SUCCESS: Basic HTML elements found', 'success');
+                } else {
+                    log('test1', 'ERROR: Basic HTML elements not found', 'error');
+                }
+                
+                // Test if we can create elements
+                const testDiv = document.createElement('div');
+                testDiv.textContent = 'Test div created successfully';
+                document.body.appendChild(testDiv);
+                testDiv.remove();
+                
+                log('test1', 'SUCCESS: Can create and manipulate DOM elements', 'success');
+                
+            } catch (error) {
+                log('test1', 'ERROR: ' + error.message, 'error');
+            }
+        }
+        
+        // Test 2: Content Input and Preview Elements
+        function test2() {
+            log('test2', 'Testing content input and preview elements...');
+            
+            try {
+                const contentInput = document.getElementById('contentInput');
+                const preview = document.getElementById('pdfPreview');
+                
+                if (contentInput) {
+                    log('test2', 'SUCCESS: contentInput element found', 'success');
+                } else {
+                    log('test2', 'ERROR: contentInput element not found', 'error');
+                }
+                
+                if (preview) {
+                    log('test2', 'SUCCESS: pdfPreview element found', 'success');
+                } else {
+                    log('test2', 'ERROR: pdfPreview element not found', 'error');
+                }
+                
+                // Test if we can get/set values
+                if (contentInput) {
+                    contentInput.value = 'Test content';
+                    const value = contentInput.value;
+                    if (value === 'Test content') {
+                        log('test2', 'SUCCESS: Can get/set content input value', 'success');
+                    } else {
+                        log('test2', 'ERROR: Cannot get/set content input value', 'error');
+                    }
+                }
+                
+                // Test if we can update preview
+                if (preview) {
+                    preview.innerHTML = '<p>Test preview content</p>';
+                    if (preview.innerHTML.includes('Test preview content')) {
+                        log('test2', 'SUCCESS: Can update preview content', 'success');
+                    } else {
+                        log('test2', 'ERROR: Cannot update preview content', 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log('test2', 'ERROR: ' + error.message, 'error');
+            }
+        }
+        
+        // Test 3: Main Script Loading
+        function test3() {
+            log('test3', 'Testing main script loading...');
+            
+            try {
+                // Check if StyledPages class exists
+                if (typeof StyledPages !== 'undefined') {
+                    log('test3', 'SUCCESS: StyledPages class found', 'success');
+                    
+                    // Try to create an instance
+                    try {
+                        const app = new StyledPages();
+                        log('test3', 'SUCCESS: StyledPages instance created', 'success');
+                        
+                        // Test methods
+                        if (typeof app.updatePreview === 'function') {
+                            log('test3', 'SUCCESS: updatePreview method found', 'success');
+                        } else {
+                            log('test3', 'ERROR: updatePreview method not found', 'error');
+                        }
+                        
+                        if (typeof app.parseContent === 'function') {
+                            log('test3', 'SUCCESS: parseContent method found', 'success');
+                        } else {
+                            log('test3', 'ERROR: parseContent method not found', 'error');
+                        }
+                        
+                    } catch (error) {
+                        log('test3', 'ERROR creating StyledPages instance: ' + error.message, 'error');
+                    }
+                } else {
+                    log('test3', 'ERROR: StyledPages class not found', 'error');
+                }
+                
+            } catch (error) {
+                log('test3', 'ERROR: ' + error.message, 'error');
+            }
+        }
+        
+        // Test 4: Preview Functionality
+        function testPreview() {
+            log('test4', 'Testing preview functionality...');
+            
+            try {
+                const contentInput = document.getElementById('contentInput');
+                const preview = document.getElementById('pdfPreview');
+                
+                if (!contentInput || !preview) {
+                    log('test4', 'ERROR: Required elements not found', 'error');
+                    return;
+                }
+                
+                const content = contentInput.value;
+                log('test4', 'Content length: ' + content.length);
+                
+                // Simple markdown parsing
+                let html = content
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/^- (.*$)/gim, '<li>$1</li>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>');
+                
+                // Wrap list items
+                html = html.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
+                
+                // Wrap paragraphs
+                if (!html.startsWith('<h') && !html.startsWith('<ul')) {
+                    html = '<p>' + html + '</p>';
+                }
+                
+                preview.innerHTML = html;
+                log('test4', 'SUCCESS: Preview updated with HTML: ' + html.substring(0, 100) + '...', 'success');
+                
+                // Test if content is visible
+                const rect = preview.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    log('test4', 'SUCCESS: Preview element is visible', 'success');
+                } else {
+                    log('test4', 'WARNING: Preview element may not be visible', 'warning');
+                }
+                
+            } catch (error) {
+                log('test4', 'ERROR: ' + error.message, 'error');
+            }
+        }
+        
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', () => {
+            log('test1', 'Starting comprehensive tests...');
+            
+            test1();
+            test2();
+            test3();
+            testPreview();
+            
+            // Test on input
+            document.getElementById('contentInput').addEventListener('input', testPreview);
+        });
+    </script>
+    
+    <!-- Load the main script -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -455,7 +455,8 @@ class StyledPagesPDFGenerator {
     processInlineFormatting(text) {
         return text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/---/g, '&nbsp;&mdash;&nbsp;&mdash;&nbsp;&mdash;&nbsp;'); // Replace three hyphens with spaced em dashes to prevent horizontal rule interpretation
     }
 
     /**

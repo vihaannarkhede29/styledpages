@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Formatting</title>
+    <style>
+        .pdf-preview {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            line-height: var(--line-spacing, 1.5);
+            color: var(--body-color, #1e293b);
+            font-size: var(--body-size, 14px);
+            padding: var(--margin-top, 1in) var(--margin-right, 1in) var(--margin-bottom, 1in) var(--margin-left, 1in) !important;
+            position: relative;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            min-height: var(--page-height, 11in);
+            width: var(--page-width, 8.5in);
+            margin: 0 auto;
+            page-break-after: always;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .pdf-preview h1 {
+            font-family: var(--title-font, 'Inter', sans-serif);
+            color: var(--title-color, #1e40af);
+            font-size: var(--title-size, 32px);
+            font-weight: 700;
+            margin: 0 0 1.5rem 0;
+            padding: 0 0 0.5rem 0;
+            border-bottom: 3px solid var(--accent-color, #3b82f6);
+            line-height: 1.2;
+            text-align: var(--title-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview h2 {
+            font-family: var(--header-font, 'Inter', sans-serif);
+            color: var(--header-color, #3b82f6);
+            font-size: var(--header-size, 24px);
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            padding: 0;
+            line-height: 1.3;
+            text-align: var(--header-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview p {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            color: var(--body-color, #475569);
+            font-size: var(--body-size, 14px);
+            line-height: var(--line-spacing, 1.5);
+            margin: 0 0 1rem 0;
+            padding: 0;
+            text-align: var(--body-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview ul {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            margin: 1rem 0;
+            padding: 0 0 0 1.5rem;
+            list-style: none;
+            text-align: var(--body-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview li {
+            color: var(--body-color, #475569);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 0 0 0.5rem 0;
+            padding: 0;
+            position: relative;
+        }
+        
+        .pdf-preview li::before {
+            content: "•";
+            color: var(--accent-color, #3b82f6);
+            font-weight: bold;
+            position: absolute;
+            left: -1rem;
+        }
+        
+        .test-controls {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+        
+        .test-controls label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+        
+        .test-controls input, .test-controls select {
+            margin: 5px 10px 5px 0;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-controls">
+        <h2>Test Controls</h2>
+        <label>Title Color: <input type="color" id="titleColor" value="#1e40af"></label>
+        <label>Header Color: <input type="color" id="headerColor" value="#3b82f6"></label>
+        <label>Body Color: <input type="color" id="bodyColor" value="#475569"></label>
+        <label>Accent Color: <input type="color" id="accentColor" value="#3b82f6"></label>
+        <br>
+        <label>Title Size: <input type="range" id="titleSize" min="16" max="48" value="32"> <span id="titleSizeValue">32px</span></label>
+        <label>Header Size: <input type="range" id="headerSize" min="12" max="32" value="24"> <span id="headerSizeValue">24px</span></label>
+        <label>Body Size: <input type="range" id="bodySize" min="8" max="20" value="14"> <span id="bodySizeValue">14px</span></label>
+        <br>
+        <label>Title Font: 
+            <select id="titleFont">
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Arial">Arial</option>
+            </select>
+        </label>
+        <label>Header Font: 
+            <select id="headerFont">
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Arial">Arial</option>
+            </select>
+        </label>
+        <label>Body Font: 
+            <select id="bodyFont">
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Arial">Arial</option>
+            </select>
+        </label>
+        <br>
+        <button onclick="updatePreview()">Update Preview</button>
+    </div>
+    
+    <div id="pdfPreview" class="pdf-preview">
+        <h1>Main Title</h1>
+        <h2>Subtitle</h2>
+        <p>This is a paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+        <ul>
+            <li>First item</li>
+            <li>Second item</li>
+            <li>Third item</li>
+        </ul>
+    </div>
+    
+    <script>
+        function updatePreview() {
+            const preview = document.getElementById('pdfPreview');
+            
+            // Get values from controls
+            const titleColor = document.getElementById('titleColor').value;
+            const headerColor = document.getElementById('headerColor').value;
+            const bodyColor = document.getElementById('bodyColor').value;
+            const accentColor = document.getElementById('accentColor').value;
+            const titleSize = document.getElementById('titleSize').value;
+            const headerSize = document.getElementById('headerSize').value;
+            const bodySize = document.getElementById('bodySize').value;
+            const titleFont = document.getElementById('titleFont').value;
+            const headerFont = document.getElementById('headerFont').value;
+            const bodyFont = document.getElementById('bodyFont').value;
+            
+            // Update size displays
+            document.getElementById('titleSizeValue').textContent = titleSize + 'px';
+            document.getElementById('headerSizeValue').textContent = headerSize + 'px';
+            document.getElementById('bodySizeValue').textContent = bodySize + 'px';
+            
+            // Set CSS custom properties
+            preview.style.setProperty('--title-color', titleColor);
+            preview.style.setProperty('--header-color', headerColor);
+            preview.style.setProperty('--body-color', bodyColor);
+            preview.style.setProperty('--accent-color', accentColor);
+            preview.style.setProperty('--title-size', titleSize + 'px');
+            preview.style.setProperty('--header-size', headerSize + 'px');
+            preview.style.setProperty('--body-size', bodySize + 'px');
+            preview.style.setProperty('--title-font', titleFont);
+            preview.style.setProperty('--header-font', headerFont);
+            preview.style.setProperty('--body-font', bodyFont);
+            
+            console.log('Updated CSS variables:', {
+                titleColor, headerColor, bodyColor, accentColor,
+                titleSize, headerSize, bodySize,
+                titleFont, headerFont, bodyFont
+            });
+        }
+        
+        // Add event listeners
+        document.getElementById('titleColor').addEventListener('change', updatePreview);
+        document.getElementById('headerColor').addEventListener('change', updatePreview);
+        document.getElementById('bodyColor').addEventListener('change', updatePreview);
+        document.getElementById('accentColor').addEventListener('change', updatePreview);
+        document.getElementById('titleSize').addEventListener('input', updatePreview);
+        document.getElementById('headerSize').addEventListener('input', updatePreview);
+        document.getElementById('bodySize').addEventListener('input', updatePreview);
+        document.getElementById('titleFont').addEventListener('change', updatePreview);
+        document.getElementById('headerFont').addEventListener('change', updatePreview);
+        document.getElementById('bodyFont').addEventListener('change', updatePreview);
+        
+        // Initial update
+        updatePreview();
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-content { border: 2px solid #ccc; padding: 20px; margin: 20px 0; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    
+    <div class="debug">
+        <h3>Test 1: Basic HTML</h3>
+        <div class="test-content">
+            <h1>Main Title</h1>
+            <h2>Subtitle</h2>
+            <p>This is a paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+            <ul>
+                <li>First item</li>
+                <li>Second item</li>
+                <li>Third item</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="debug">
+        <h3>Test 2: JavaScript Parsing</h3>
+        <textarea id="testInput" style="width: 100%; height: 100px;"># Test Title
+
+## Subtitle
+
+This is a paragraph with **bold text** and *italic text*.
+
+- First item
+- Second item
+- Third item</textarea>
+        <button onclick="testParsing()">Test Parsing</button>
+        <div id="testOutput" class="test-content"></div>
+    </div>
+    
+    <script>
+        function parseContent(content) {
+            const lines = content.split('\n');
+            let html = '';
+            let inList = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('# ')) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = processInlineFormatting(line.substring(2));
+                    html += `<h1>${headerText}</h1>`;
+                } else if (line.startsWith('## ')) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = processInlineFormatting(line.substring(3));
+                    html += `<h2>${headerText}</h2>`;
+                } else if (line.startsWith('### ')) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const headerText = processInlineFormatting(line.substring(4));
+                    html += `<h3>${headerText}</h3>`;
+                } else if (line.startsWith('- ')) {
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const listText = processInlineFormatting(line.substring(2));
+                    html += `<li>${listText}</li>`;
+                } else if (line.length > 0) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const paragraphText = processInlineFormatting(line);
+                    html += `<p>${paragraphText}</p>`;
+                } else {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    if (html && !html.endsWith('</p>') && !html.endsWith('</h1>') && !html.endsWith('</h2>') && !html.endsWith('</h3>')) {
+                        html += '<br>';
+                    }
+                }
+            }
+            
+            if (inList) {
+                html += '</ul>';
+            }
+            
+            return html;
+        }
+        
+        function processInlineFormatting(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/---/g, '&nbsp;&mdash;&nbsp;&mdash;&nbsp;&mdash;&nbsp;'); // Replace three hyphens with spaced em dashes to prevent horizontal rule interpretation
+        }
+        
+        function testParsing() {
+            const input = document.getElementById('testInput').value;
+            const output = document.getElementById('testOutput');
+            const parsed = parseContent(input);
+            output.innerHTML = parsed;
+            console.log('Input:', input);
+            console.log('Parsed:', parsed);
+        }
+    </script>
+</body>
+</html>

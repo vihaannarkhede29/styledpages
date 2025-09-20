@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Layout</title>
+    <style>
+        .pdf-preview {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            line-height: var(--line-spacing, 1.5);
+            color: var(--body-color, #1e293b);
+            font-size: var(--body-size, 14px);
+            padding: var(--margin-top, 1in) var(--margin-right, 1in) var(--margin-bottom, 1in) var(--margin-left, 1in) !important;
+            position: relative;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            min-height: var(--page-height, 11in);
+            width: var(--page-width, 8.5in);
+            page-break-after: always;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .pdf-preview h1 {
+            font-family: var(--title-font, 'Inter', sans-serif);
+            color: var(--title-color, #1e40af);
+            font-size: var(--title-size, 32px);
+            font-weight: 700;
+            margin: 0 0 1.5rem 0;
+            padding: 0 0 0.5rem 0;
+            border-bottom: 3px solid var(--accent-color, #3b82f6);
+            line-height: 1.2;
+            text-align: var(--title-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview h2 {
+            font-family: var(--header-font, 'Inter', sans-serif);
+            color: var(--header-color, #3b82f6);
+            font-size: var(--header-size, 24px);
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            padding: 0;
+            line-height: 1.3;
+            text-align: var(--header-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview p {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            color: var(--body-color, #475569);
+            font-size: var(--body-size, 14px);
+            line-height: var(--line-spacing, 1.5);
+            margin: 0 0 1rem 0;
+            padding: 0;
+            text-align: var(--body-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview ul {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            margin: 1rem 0;
+            padding: 0 0 0 1.5rem;
+            list-style: none;
+            text-align: var(--body-alignment, var(--text-alignment, left));
+        }
+        
+        .pdf-preview li {
+            color: var(--body-color, #475569);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 0 0 0.5rem 0;
+            padding: 0;
+            position: relative;
+        }
+        
+        .pdf-preview li::before {
+            content: "•";
+            color: var(--accent-color, #3b82f6);
+            font-weight: bold;
+            position: absolute;
+            left: -1rem;
+        }
+        
+        .page-break {
+            border-top: 2px dashed #666;
+            margin: 1rem 0;
+            width: 100%;
+            height: 0;
+            position: relative;
+        }
+        
+        .page-break.initial-page {
+            border: none;
+            margin: 0;
+            page-break-before: always;
+        }
+        
+        .test-controls {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+        
+        .test-controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-controls">
+        <h2>Debug Layout Test</h2>
+        <button onclick="testSimpleContent()">Test Simple Content</button>
+        <button onclick="testComplexContent()">Test Complex Content</button>
+        <button onclick="testColumnContent()">Test Column Content</button>
+    </div>
+    
+    <div id="pdfPreview" class="pdf-preview">
+        <div class="page-break initial-page"></div>
+        <h1>Test Document</h1>
+        <p>This is a test paragraph to see how the layout works.</p>
+    </div>
+    
+    <script>
+        function testSimpleContent() {
+            const preview = document.getElementById('pdfPreview');
+            preview.innerHTML = `
+                <div class="page-break initial-page"></div>
+                <h1>Simple Test</h1>
+                <p>This is a simple paragraph with normal text flow.</p>
+                <p>This is another paragraph to test spacing.</p>
+            `;
+        }
+        
+        function testComplexContent() {
+            const preview = document.getElementById('pdfPreview');
+            preview.innerHTML = `
+                <div class="page-break initial-page"></div>
+                <h1>Complex Test</h1>
+                <h2>Subtitle</h2>
+                <p>This is a paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+                <ul>
+                    <li>First item</li>
+                    <li>Second item</li>
+                    <li>Third item</li>
+                </ul>
+                <p>Another paragraph after the list.</p>
+            `;
+        }
+        
+        function testColumnContent() {
+            const preview = document.getElementById('pdfPreview');
+            preview.innerHTML = `
+                <div class="page-break initial-page"></div>
+                <h1>Chapter 6: The Law of Wisdom</h1>
+                <p><em>Use this worksheet to map your God-centered vision, break it into actionable steps, and track your progress.</em></p>
+                <h2>Reflection Questions</h2>
+                <ul>
+                    <li>Which daily actions are aligned with this vision?</li>
+                    <li>Where do I need clarity or refinement to better follow God's purpose?</li>
+                </ul>
+                <h2>Action Step:</h2>
+                <p>Revise your Kingdom Vision Map. Pray over it, set actionable steps for the next 30 days, and commit to reviewing it weekly to stay aligned with God's calling.</p>
+            `;
+        }
+        
+        // Set CSS variables
+        const preview = document.getElementById('pdfPreview');
+        preview.style.setProperty('--title-color', '#1e40af');
+        preview.style.setProperty('--header-color', '#3b82f6');
+        preview.style.setProperty('--body-color', '#475569');
+        preview.style.setProperty('--accent-color', '#3b82f6');
+        preview.style.setProperty('--title-size', '32px');
+        preview.style.setProperty('--header-size', '24px');
+        preview.style.setProperty('--body-size', '14px');
+        preview.style.setProperty('--margin-top', '1in');
+        preview.style.setProperty('--margin-bottom', '1in');
+        preview.style.setProperty('--margin-left', '1in');
+        preview.style.setProperty('--margin-right', '1in');
+        preview.style.setProperty('--page-width', '8.5in');
+        preview.style.setProperty('--page-height', '11in');
+    </script>
+</body>
+</html>
+
+

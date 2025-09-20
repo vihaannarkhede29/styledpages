@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Test</title>
+    <style>
+        .pdf-preview {
+            font-family: var(--body-font, 'Inter', sans-serif);
+            color: var(--body-color, #1e293b);
+            font-size: var(--body-size, 14px);
+            padding: 20px;
+            border: 1px solid #ccc;
+            margin: 20px;
+        }
+        
+        .pdf-preview h1 {
+            font-family: var(--title-font, 'Inter', sans-serif);
+            color: var(--title-color, #1e40af);
+            font-size: var(--title-size, 32px);
+        }
+        
+        .pdf-preview h2 {
+            font-family: var(--header-font, 'Inter', sans-serif);
+            color: var(--header-color, #3b82f6);
+            font-size: var(--header-size, 24px);
+        }
+    </style>
+</head>
+<body>
+    <h1>Minimal Test</h1>
+    <button onclick="testVariables()">Test CSS Variables</button>
+    <button onclick="testDirectStyles()">Test Direct Styles</button>
+    
+    <div id="pdfPreview" class="pdf-preview">
+        <h1>Main Title</h1>
+        <h2>Subtitle</h2>
+        <p>This is a paragraph.</p>
+    </div>
+    
+    <script>
+        function testVariables() {
+            const preview = document.getElementById('pdfPreview');
+            console.log('Setting CSS variables...');
+            preview.style.setProperty('--title-color', '#ff0000');
+            preview.style.setProperty('--header-color', '#00ff00');
+            preview.style.setProperty('--body-color', '#0000ff');
+            preview.style.setProperty('--title-size', '48px');
+            preview.style.setProperty('--header-size', '36px');
+            preview.style.setProperty('--body-size', '18px');
+            console.log('CSS variables set');
+        }
+        
+        function testDirectStyles() {
+            const preview = document.getElementById('pdfPreview');
+            console.log('Setting direct styles...');
+            preview.style.color = '#ff0000';
+            preview.style.fontSize = '20px';
+            console.log('Direct styles set');
+        }
+    </script>
+</body>
+</html>
+
+
