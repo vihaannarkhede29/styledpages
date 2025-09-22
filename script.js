@@ -711,8 +711,13 @@ class AuthManager {
     updateUI() {
         const userEmail = document.getElementById('userEmail');
         const accountBtn = document.getElementById('accountBtn');
+        const mainContent = document.getElementById('mainContent');
+        const landingPage = document.getElementById('landingPage');
+        const appHeaderActions = document.getElementById('appHeaderActions');
+        const backToLandingBtn = document.getElementById('backToLandingBtn');
         
         if (this.isLoggedIn()) {
+            // User is logged in - show main content
             if (userEmail) {
                 userEmail.textContent = this.currentUser.email;
                 userEmail.style.display = 'block';
@@ -720,13 +725,29 @@ class AuthManager {
             if (accountBtn) {
                 accountBtn.textContent = 'Logout';
             }
+            
+            // Show main content and hide landing page
+            if (mainContent) mainContent.style.display = 'block';
+            if (landingPage) landingPage.style.display = 'none';
+            if (appHeaderActions) appHeaderActions.style.display = 'flex';
+            if (backToLandingBtn) backToLandingBtn.style.display = 'inline-block';
+            
+            // Scroll to top to show the main content
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
+            // User is not logged in - show landing page
             if (userEmail) {
                 userEmail.style.display = 'none';
             }
             if (accountBtn) {
                 accountBtn.textContent = 'Account';
             }
+            
+            // Show landing page and hide main content
+            if (mainContent) mainContent.style.display = 'none';
+            if (landingPage) landingPage.style.display = 'block';
+            if (appHeaderActions) appHeaderActions.style.display = 'none';
+            if (backToLandingBtn) backToLandingBtn.style.display = 'none';
         }
     }
 
@@ -1660,8 +1681,14 @@ class StyledPages {
         }
         if (pricingBtn) {
             pricingBtn.addEventListener('click', () => {
-                // Pricing modal disabled - everything is free
-                alert('Everything is now free! All features are available at no cost.');
+                // Check if user is logged in
+                if (this.authManager.isLoggedIn()) {
+                    // User is logged in, show pricing info
+                    alert('Everything is now free! All features are available at no cost.');
+                } else {
+                    // User is not logged in, show account modal
+                    this.authManager.showAccountModal();
+                }
             });
         }
         if (insertImagesBtn) {
