@@ -1273,6 +1273,7 @@ class StyledPages {
         this.updateInputPlaceholder();
         this.syncInputModeRadio();
         this.testMarginFunctionality();
+        this.setupScrollIndicator();
         
         // Automatically load demo content with custom styling
         const contentInput = document.getElementById('contentInput');
@@ -1302,6 +1303,70 @@ class StyledPages {
         console.log('Testing margin functionality...');
         console.log('Current margins:', { top: this.marginTop, bottom: this.marginBottom, left: this.marginLeft, right: this.marginRight });
         console.log('Preview element:', document.getElementById('pdfPreview'));
+    }
+    
+    setupScrollIndicator() {
+        const scrollIndicator = document.querySelector('.scroll-indicator');
+        if (!scrollIndicator) return;
+        
+        let hasScrolled = false;
+        let scrollTimeout;
+        
+        // Hide scroll indicator when user starts scrolling
+        const handleScroll = () => {
+            if (!hasScrolled) {
+                hasScrolled = true;
+                scrollIndicator.style.opacity = '0';
+                scrollIndicator.style.transform = 'translateY(-10px)';
+                scrollIndicator.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            }
+            
+            // Clear existing timeout
+            clearTimeout(scrollTimeout);
+            
+            // Show indicator again after 3 seconds of no scrolling
+            scrollTimeout = setTimeout(() => {
+                if (window.scrollY < 100) { // Only show if near top
+                    scrollIndicator.style.opacity = '0.7';
+                    scrollIndicator.style.transform = 'translateY(0)';
+                }
+            }, 3000);
+        };
+        
+        // Add scroll event listener
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Hide indicator when user interacts with content input
+        const contentInput = document.getElementById('contentInput');
+        if (contentInput) {
+            const hideOnInteraction = () => {
+                if (!hasScrolled) {
+                    hasScrolled = true;
+                    scrollIndicator.style.opacity = '0';
+                    scrollIndicator.style.transform = 'translateY(-10px)';
+                    scrollIndicator.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                }
+            };
+            
+            contentInput.addEventListener('focus', hideOnInteraction);
+            contentInput.addEventListener('input', hideOnInteraction);
+        }
+        
+        // Hide indicator when preview section comes into view
+        const previewSection = document.querySelector('.preview-section');
+        if (previewSection) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        scrollIndicator.style.opacity = '0';
+                        scrollIndicator.style.transform = 'translateY(-10px)';
+                        scrollIndicator.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            observer.observe(previewSection);
+        }
     }
     
     createDraggableMarginLines() {
@@ -2169,71 +2234,45 @@ class StyledPages {
     }
 
     async loadDemoContent() {
-        const demoContent = `# The 7 Biblical Laws of Wealth & Productivity
+        const demoContent = `# StyledPages Demo Document
 
-*A Faith-Driven Blueprint for Building Prosperity and Purpose with God at the Center*
+## Transform Your Content Instantly
+Welcome to StyledPages — a simple, free tool that turns your text into a beautifully formatted PDF in seconds.
 
-Is it wrong to want more? Many Christians struggle with this question, fearing that desiring wealth contradicts their faith. But what if I told you that God actually wants you to prosper—not just spiritually, but in every area of your life?
+## How It Works
+1. Paste or type your content in the editor.  
+2. Choose a template and preview your PDF.  
+3. Download your polished, professional file instantly.  
 
-God cares about how you use your time, your money, and your energy. He's given us clear principles in His Word for building wealth and productivity that honors Him. These aren't "get rich quick" schemes or worldly strategies—they're timeless biblical laws that have guided successful believers for centuries.
+## Why StyledPages?
+- Fast, no sign-up required  
+- Clean, modern designs  
+- Completely free to use  
+- Works in your browser, no downloads needed  
 
-In *The 7 Biblical Laws of Wealth & Productivity*, you'll discover how to apply these ancient principles to your modern life. From the stewardship principles that made Abraham wealthy to the wisdom strategies that built Solomon's kingdom, these laws are as relevant today as they were thousands of years ago.
+## Example Section with Subheadings
+### A Quick Guide to Getting Started
+StyledPages is designed to make your work easier. You don't need to worry about fonts, spacing, or formatting. Just focus on your words.  
 
-## Why Wisdom Multiplies Wealth and Productivity
+### A Sample List
+- Write an ebook or guide  
+- Create checklists or handouts  
+- Share notes or study materials  
+- Export professional reports  
 
-> "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding." – Proverbs 9:10
+## Quote Example
+> "Good design is invisible. StyledPages takes care of the design so you can focus on your message."
 
-Making God-Centered Decisions That Multiply Success
+## Multi-Level List Example
+1. Write your content  
+   - Add headings  
+   - Use bullet points  
+   - Highlight key quotes  
+2. Preview your PDF  
+3. Export and share  
 
-True wealth isn't just about money—it's about wisdom guided by God's truth. While knowledge tells you *what* to do, wisdom tells you *how* to do it, *when* to act, and *what* to prioritize. The Law of Wisdom ensures that your productivity, wealth, and actions are not only efficient but aligned with God's will.
-
-Wise choices reduce wasted time, money, and effort. They help you avoid the pitfalls that trap so many people in cycles of financial struggle and unproductive busyness. When you operate from biblical wisdom, every decision becomes an investment in your future success.
-
-1. **Informed Decisions Prevent Loss**
-2. **Acting without wisdom often leads to frustration, setbacks, or spiritual misalignment**
-
-## The 7 Laws That Transform Everything
-
-### Law 1: The Law of Stewardship
-*"The earth is the Lord's, and everything in it, the world, and all who live in it."* – Psalm 24:1
-
-Everything you have belongs to God. When you understand this truth, you stop hoarding and start investing. Stewardship isn't about having less—it's about managing more for God's glory.
-
-### Law 2: The Law of Diligence
-*"Lazy hands make for poverty, but diligent hands bring wealth."* – Proverbs 10:4
-
-God rewards hard work, but not just any work. Diligent work is strategic, purposeful, and done with excellence. It's the difference between being busy and being productive.
-
-### Law 3: The Law of Integrity
-*"The Lord detests dishonest scales, but accurate weights find favor with him."* – Proverbs 11:1
-
-Your reputation is your most valuable asset. When people trust you, they want to do business with you. Integrity isn't just the right thing to do—it's the profitable thing to do.
-
-### Law 4: The Law of Generosity
-*"One person gives freely, yet gains even more; another withholds unduly, but comes to poverty."* – Proverbs 11:24
-
-Generosity isn't just about giving money—it's about giving value. When you focus on serving others, God ensures you're taken care of. It's the divine principle of multiplication.
-
-### Law 5: The Law of Planning
-*"The plans of the diligent lead to profit as surely as haste leads to poverty."* – Proverbs 21:5
-
-Success doesn't happen by accident. It happens by design. When you plan with God's wisdom, you position yourself for His blessings and favor.
-
-### Law 6: The Law of Persistence
-*"Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up."* – Galatians 6:9
-
-Every successful person has faced setbacks. The difference is they didn't quit. They kept moving forward, trusting God's timing and His promises.
-
-### Law 7: The Law of Faith
-*"And without faith it is impossible to please God, because anyone who comes to him must believe that he exists and that he rewards those who earnestly seek him."* – Hebrews 11:6
-
-Faith is the foundation of everything. When you believe God wants to bless you and you act on that belief, miracles happen. Your faith becomes the bridge between where you are and where God wants you to be.
-
-## Your Next Step
-
-These laws aren't just principles—they're promises. When you apply them consistently, you'll see transformation in every area of your life. But knowledge without action is just information. The question is: Are you ready to put these laws into practice?
-
-*Start your journey to biblical wealth and productivity today. Your future self will thank you.*`;
+## Try It Now
+Erase this demo text, add your own content, and see how quickly you can create something that looks professional.`;
 
         document.getElementById('contentInput').value = demoContent;
         this.lastLoadedWasDemo = true;
