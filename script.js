@@ -9,7 +9,7 @@ function trackEvent(eventName, properties = {}) {
 // Pexels API Integration for Automatic Image Placement
 class ImageManager {
     constructor() {
-        this.pexelsApiKey = process.env.PEXELS_API_KEY || '01dD2keJqF7zBQJBZosCJUXvjtMtc56YLcqi0OSnYipTQW9IbitELxAN';
+        this.pexelsApiKey = '01dD2keJqF7zBQJBZosCJUXvjtMtc56YLcqi0OSnYipTQW9IbitELxAN';
         this.baseUrl = 'https://api.pexels.com/v1';
         this.imageCache = new Map();
         this.autoImageEnabled = false;
@@ -1255,7 +1255,7 @@ class StyledPages {
         this.subsectionPageBreak = true;
         this.showPageNumbers = true;
         this.inputMode = 'markdown'; // 'plain' or 'markdown'
-        this.geminiApiKey = process.env.GEMINI_API_KEY || 'AIzaSyDlYQ4Qi9OyazHxWm8WTdWV3bw6or09ry8';
+        this.geminiApiKey = 'AIzaSyDlYQ4Qi9OyazHxWm8WTdWV3bw6or09ry8';
         
         // Initialize authentication and usage tracking
         this.authManager = new AuthManager();
