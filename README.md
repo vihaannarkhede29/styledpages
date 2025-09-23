@@ -19,11 +19,24 @@ Go to: http://localhost:3000
 
 ## 🔥 Firebase Setup
 
-The Firebase configuration is already set up in `firebase-config.js`. Make sure you have:
+**⚠️ SECURITY NOTICE**: API keys have been removed from this repository for security. You must set up your own configuration.
+
+### 1. Get Your API Keys
+- **Firebase**: Go to [Firebase Console](https://console.firebase.google.com/) → Project Settings → General
+- **Pexels**: Get free API key from [Pexels API](https://www.pexels.com/api/)
+- **Gemini**: Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+### 2. Configure Your Keys
+1. Copy `.env.example` to `.env` and fill in your API keys
+2. Update `firebase-config.js` with your Firebase configuration
+3. Update `script.js` with your API keys
+
+### 3. Firebase Configuration
+Make sure you have:
 
 ### Authentication Methods Enabled:
 1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project: `styledpages-ace17`
+2. Select your project (create one if needed)
 3. Go to **Authentication** → **Sign-in method**
 4. Enable:
    - ✅ **Email/Password**

@@ -2566,6 +2566,95 @@ body:not(.landing) .customization-section {
 
 .input-section {
     min-height: 500px;
+    position: relative;
+}
+
+/* Scroll Indicator Styles */
+.scroll-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+}
+
+.scroll-indicator-left,
+.scroll-indicator-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.scroll-indicator-left {
+    align-items: flex-start;
+}
+
+.scroll-indicator-right {
+    align-items: flex-end;
+}
+
+.scroll-arrow-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.scroll-arrow {
+    font-size: 1.2rem;
+    color: #3b82f6;
+    animation: bounceDown 2s infinite;
+    font-weight: bold;
+}
+
+.scroll-arrow:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.scroll-arrow:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.scroll-text {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+@keyframes bounceDown {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    40% {
+        transform: translateY(8px);
+        opacity: 0.7;
+    }
+    60% {
+        transform: translateY(4px);
+        opacity: 0.8;
+    }
+}
+
+/* Hide scroll indicator on mobile */
+@media (max-width: 768px) {
+    .scroll-indicator {
+        display: none;
+    }
 }
 
 .preview-section {

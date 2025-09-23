@@ -90,3 +90,10 @@ temp/
 
 # Generated PDF files (optional - you might want to keep some examples)
 # *.pdf
+
+# Environment and configuration files with sensitive data
+firebase-config.js
+.env
+.env.local
+.env.production
+.vercel
